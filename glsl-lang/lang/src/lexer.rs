@@ -196,9 +196,11 @@ impl<'i> Iterator for Lexer<'i> {
 
                 // Transform the ident into a type name if needed
                 if let Token::Identifier((ident, ref ctx)) = token.1 {
-                    if ctx.is_type_name(ident) {
-                        token.1 = Token::TypeName(ident);
-                    }
+                    if self.last_token != Some(Token::Struct) {
+                        if ctx.is_type_name(ident) {
+                            token.1 = Token::TypeName(ident);
+                        }
+                    };
                 }
 
                 // Switch to preprocessor mode when encountering a preprocessor token

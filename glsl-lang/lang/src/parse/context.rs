@@ -253,6 +253,7 @@ impl ParseContextData {
 
     /// Update the context data with a new identifier in a given context
     pub fn new_identifier(&mut self, name: &ast::Identifier, ctx: IdentifierContext) {
+        println!("new_identifier:{:?}",&name);
         if self.policy.promote_to_type_name(name, ctx) {
             self.add_type_name(name.clone());
         }

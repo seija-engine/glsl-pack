@@ -1,6 +1,6 @@
-use std::{sync::Arc, env, path::PathBuf};
+use std::{sync::Arc};
 use text_macro::{MacroContext};
-use crate::{MacroGroup, package::{PackageInfo, Package}, walk_glsl_folder, ast::{ASTPackage, SymbolName}, compiler::{DepSearchGen, CompileEnv}};
+use crate::{MacroGroup, package::{PackageInfo, Package}, walk_glsl_folder, ast::{ASTPackage, SymbolName}, compiler::CompileEnv, DepSearchGen};
 
 #[derive(Debug)]
 pub struct PackageInstance {
@@ -11,6 +11,8 @@ pub struct PackageInstance {
 impl PackageInstance {
     pub fn create(group:MacroGroup,info:Arc<PackageInfo>) -> PackageInstance { 
         let mut inst = PackageInstance { info,ast_pkg:ASTPackage::default() };
+        inst.ast_pkg.pkg_info = inst.info.clone();
+
         let mc = inst.load_macro_ctx(&group);
         let full_path = inst.info.path.canonicalize().unwrap().to_str().unwrap().to_string();
         for (name,f) in mc.files {
@@ -49,7 +51,7 @@ fn load_package() {
     let inst = pkg.get_inst(macros);
     let mut search_gen = DepSearchGen::new(inst);
     let mut out_string = String::default();
-    search_gen.gen(vec![sym_vs],&mut out_string,&mut env);
+    search_gen.run(vec![sym_vs],&mut out_string,&mut env);
 
     println!("{}",out_string);
 }
