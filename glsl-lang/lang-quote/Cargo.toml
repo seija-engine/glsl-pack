@@ -1,0 +1,35 @@
+[package]
+name = "glsl-lang-quote"
+version = "0.2.0"
+authors = ["Vincent Tavernier <vince.tavernier@gmail.com>"]
+edition = "2018"
+license = "BSD-3-Clause"
+description = "Quoting proc-macro for glsl-lang"
+homepage = "https://github.com/vtavernier/glsl-lang"
+documentation = "https://docs.rs/glsl-lang-quote/"
+repository = "https://github.com/vtavernier/glsl-lang"
+readme = "README.md"
+keywords = ["glsl", "language", "parser", "ast", "macro"]
+categories = ["parser-implementations", "rendering"]
+
+[lib]
+proc-macro = true
+path = "src/lib.rs"
+
+[dependencies]
+glsl-lang = "0.2.0"
+proc-macro2 = "1"
+quote = "1"
+smol_str = "0.1"
+
+[features]
+# Default: only translation units can be quoted
+default = ["quote-parsable"]
+
+# Additional sub-quotes. Increases compilation time.
+quote-expr = ["glsl-lang/parser-expr"]
+quote-preprocessor = ["glsl-lang/parser-preprocessor"]
+quote-statement = ["glsl-lang/parser-statement"]
+
+# Allow parsing quoted expressions with parseable
+quote-parsable = []

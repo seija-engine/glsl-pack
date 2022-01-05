@@ -1,0 +1,1051 @@
+use crate::{
+    ast::{self, NodeContent},
+    lexer::{LexerContext, LexerPosition, LexicalError, Token},
+    parse::IdentifierContext,
+};
+
+grammar<'i>(text: &'i str);
+
+comma<T>: Vec<T> = {
+    <e:T?> <v:("," <T>)*> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.insert(0, e);
+            v
+        }
+    }
+};
+
+comma_trailing<T>: Vec<T> = {
+    <v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
+
+identifier: (ast::Identifier, LexerContext) = {
+    <l:@L> <i:ident> <r:@R> => (ast::IdentifierData::from(i.as_str()).spanned(l, r), i.context()),
+};
+
+type_name: ast::TypeName = {
+    <l:@L> <i:ty_name> <r:@R> => ast::TypeNameData::from(i.as_str()).spanned(l, r),
+};
+
+primary_expression: ast::Expr = {
+    <l:@L> <e:identifier>      <r:@R> => ast::ExprData::Variable(e.0).spanned(l, r),
+    <l:@L> <e:double_constant> <r:@R> => ast::ExprData::DoubleConst(e.into()).spanned(l, r),
+    <l:@L> <e:float_constant>  <r:@R> => ast::ExprData::FloatConst(e.into()).spanned(l, r),
+    <l:@L> <e:uint_constant>   <r:@R> => ast::ExprData::UIntConst(e.into()).spanned(l, r),
+    <l:@L> <e:int_constant>    <r:@R> => ast::ExprData::IntConst(e.into()).spanned(l, r),
+    <l:@L> <e:bool_constant>   <r:@R> => ast::ExprData::BoolConst(e.into()).spanned(l, r),
+    "(" <expr> ")",
+};
+
+postfix_expression: ast::Expr = {
+    primary_expression,
+    <a:@L> <l:postfix_expression> "[" <e:expr> "]" <b:@R> =>
+        ast::ExprData::Bracket(Box::new(l), Box::new(e)).spanned(a, b),
+    function_call,
+    <a:@L> <l:postfix_expression> "." <r:identifier> <b:@R> => ast::ExprData::Dot(Box::new(l), r.0).spanned(a, b),
+    <a:@L> <e:postfix_expression> "++"               <b:@R> => ast::ExprData::PostInc(Box::new(e)).spanned(a, b),
+    <a:@L> <e:postfix_expression> "--"               <b:@R> => ast::ExprData::PostDec(Box::new(e)).spanned(a, b),
+};
+
+integer_expression = {
+    expr
+};
+
+function_call: ast::Expr = {
+    <a:@L> <i:fun_identifier> "(" <e:comma<assignment_expression>> ")" <b:@R> =>
+        ast::ExprData::FunCall(i, e).spanned(a, b),
+    <a:@L> <i:fun_identifier> "(" "void" ")" <b:@R> =>
+        ast::ExprData::FunCall(i, vec![]).spanned(a, b),
+};
+
+array_specifier_dimension_data: ast::ArraySpecifierDimensionData = {
+    "[" "]" => ast::ArraySpecifierDimensionData::Unsized,
+    "[" <conditional_expression> "]" => ast::ArraySpecifierDimensionData::ExplicitlySized(Box::new(<>)),
+};
+
+array_specifier_dimension: ast::ArraySpecifierDimension = {
+    <l:@L> <a:array_specifier_dimension_data> <r:@R> => a.spanned(l, r)
+};
+
+array_specifier: ast::ArraySpecifier = {
+    <l:@L> <a:array_specifier_dimension+> <r:@R> => ast::ArraySpecifierData {
+        dimensions: a,
+    }.spanned(l, r)
+};
+
+struct_field_specifier: ast::StructFieldSpecifier = {
+    <l:@L> <q:type_qualifier?> <s:type_specifier> <f:comma<arrayed_identifier>> ";" <r:@R> => ast::StructFieldSpecifierData {
+        qualifier: q,
+        ty: s,
+        identifiers: f,
+    }.spanned(l, r)
+};
+
+struct_specifier: ast::StructSpecifier = {
+    <l:@L> "struct" <i:identifier?> "{" <s:struct_field_specifier*> "}" <r:@R> => ast::StructSpecifierData {
+        name: i.map(|(ident, names)| names.add_type_name(ident)),
+        fields: s,
+    }.spanned(l, r),
+};
+
+type_specifier_non_struct: ast::TypeSpecifierNonArrayData = {
+    "void"                   => ast::TypeSpecifierNonArrayData::Void,
+    "bool"                   => ast::TypeSpecifierNonArrayData::Bool,
+    "int"                    => ast::TypeSpecifierNonArrayData::Int,
+    "uint"                   => ast::TypeSpecifierNonArrayData::UInt,
+    "float"                  => ast::TypeSpecifierNonArrayData::Float,
+    "double"                 => ast::TypeSpecifierNonArrayData::Double,
+    "vec2"                   => ast::TypeSpecifierNonArrayData::Vec2,
+    "vec3"                   => ast::TypeSpecifierNonArrayData::Vec3,
+    "vec4"                   => ast::TypeSpecifierNonArrayData::Vec4,
+    "dvec2"                  => ast::TypeSpecifierNonArrayData::DVec2,
+    "dvec3"                  => ast::TypeSpecifierNonArrayData::DVec3,
+    "dvec4"                  => ast::TypeSpecifierNonArrayData::DVec4,
+    "bvec2"                  => ast::TypeSpecifierNonArrayData::BVec2,
+    "bvec3"                  => ast::TypeSpecifierNonArrayData::BVec3,
+    "bvec4"                  => ast::TypeSpecifierNonArrayData::BVec4,
+    "ivec2"                  => ast::TypeSpecifierNonArrayData::IVec2,
+    "ivec3"                  => ast::TypeSpecifierNonArrayData::IVec3,
+    "ivec4"                  => ast::TypeSpecifierNonArrayData::IVec4,
+    "uvec2"                  => ast::TypeSpecifierNonArrayData::UVec2,
+    "uvec3"                  => ast::TypeSpecifierNonArrayData::UVec3,
+    "uvec4"                  => ast::TypeSpecifierNonArrayData::UVec4,
+    "mat2"                   => ast::TypeSpecifierNonArrayData::Mat2,
+    "mat3"                   => ast::TypeSpecifierNonArrayData::Mat3,
+    "mat4"                   => ast::TypeSpecifierNonArrayData::Mat4,
+    "mat2x2"                 => ast::TypeSpecifierNonArrayData::Mat22,
+    "mat2x3"                 => ast::TypeSpecifierNonArrayData::Mat23,
+    "mat2x4"                 => ast::TypeSpecifierNonArrayData::Mat24,
+    "mat3x2"                 => ast::TypeSpecifierNonArrayData::Mat32,
+    "mat3x3"                 => ast::TypeSpecifierNonArrayData::Mat33,
+    "mat3x4"                 => ast::TypeSpecifierNonArrayData::Mat34,
+    "mat4x2"                 => ast::TypeSpecifierNonArrayData::Mat42,
+    "mat4x3"                 => ast::TypeSpecifierNonArrayData::Mat43,
+    "mat4x4"                 => ast::TypeSpecifierNonArrayData::Mat44,
+    "dmat2"                  => ast::TypeSpecifierNonArrayData::DMat2,
+    "dmat3"                  => ast::TypeSpecifierNonArrayData::DMat3,
+    "dmat4"                  => ast::TypeSpecifierNonArrayData::DMat4,
+    "dmat2x2"                => ast::TypeSpecifierNonArrayData::DMat22,
+    "dmat2x3"                => ast::TypeSpecifierNonArrayData::DMat23,
+    "dmat2x4"                => ast::TypeSpecifierNonArrayData::DMat24,
+    "dmat3x2"                => ast::TypeSpecifierNonArrayData::DMat32,
+    "dmat3x3"                => ast::TypeSpecifierNonArrayData::DMat33,
+    "dmat3x4"                => ast::TypeSpecifierNonArrayData::DMat34,
+    "dmat4x2"                => ast::TypeSpecifierNonArrayData::DMat42,
+    "dmat4x3"                => ast::TypeSpecifierNonArrayData::DMat43,
+    "dmat4x4"                => ast::TypeSpecifierNonArrayData::DMat44,
+    "sampler1D"              => ast::TypeSpecifierNonArrayData::Sampler1D,
+    "image1D"                => ast::TypeSpecifierNonArrayData::Image1D,
+    "sampler2D"              => ast::TypeSpecifierNonArrayData::Sampler2D,
+    "image2D"                => ast::TypeSpecifierNonArrayData::Image2D,
+    "sampler3D"              => ast::TypeSpecifierNonArrayData::Sampler3D,
+    "image3D"                => ast::TypeSpecifierNonArrayData::Image3D,
+    "samplerCube"            => ast::TypeSpecifierNonArrayData::SamplerCube,
+    "imageCube"              => ast::TypeSpecifierNonArrayData::ImageCube,
+    "sampler2DRect"          => ast::TypeSpecifierNonArrayData::Sampler2DRect,
+    "image2DRect"            => ast::TypeSpecifierNonArrayData::Image2DRect,
+    "sampler1DArray"         => ast::TypeSpecifierNonArrayData::Sampler1DArray,
+    "image1DArray"           => ast::TypeSpecifierNonArrayData::Image1DArray,
+    "sampler2DArray"         => ast::TypeSpecifierNonArrayData::Sampler2DArray,
+    "image2DArray"           => ast::TypeSpecifierNonArrayData::Image2DArray,
+    "samplerBuffer"          => ast::TypeSpecifierNonArrayData::SamplerBuffer,
+    "imageBuffer"            => ast::TypeSpecifierNonArrayData::ImageBuffer,
+    "sampler2DMS"            => ast::TypeSpecifierNonArrayData::Sampler2DMs,
+    "image2DMS"              => ast::TypeSpecifierNonArrayData::Image2DMs,
+    "sampler2DMSArray"       => ast::TypeSpecifierNonArrayData::Sampler2DMsArray,
+    "image2DMSArray"         => ast::TypeSpecifierNonArrayData::Image2DMsArray,
+    "samplerCubeArray"       => ast::TypeSpecifierNonArrayData::SamplerCubeArray,
+    "imageCubeArray"         => ast::TypeSpecifierNonArrayData::ImageCubeArray,
+    "sampler1DShadow"        => ast::TypeSpecifierNonArrayData::Sampler1DShadow,
+    "sampler2DShadow"        => ast::TypeSpecifierNonArrayData::Sampler2DShadow,
+    "sampler2DRectShadow"    => ast::TypeSpecifierNonArrayData::Sampler2DRectShadow,
+    "sampler1DArrayShadow"   => ast::TypeSpecifierNonArrayData::Sampler1DArrayShadow,
+    "sampler2DArrayShadow"   => ast::TypeSpecifierNonArrayData::Sampler2DArrayShadow,
+    "samplerCubeShadow"      => ast::TypeSpecifierNonArrayData::SamplerCubeShadow,
+    "samplerCubeArrayShadow" => ast::TypeSpecifierNonArrayData::SamplerCubeArrayShadow,
+    "isampler1D"             => ast::TypeSpecifierNonArrayData::ISampler1D,
+    "iimage1D"               => ast::TypeSpecifierNonArrayData::IImage1D,
+    "isampler2D"             => ast::TypeSpecifierNonArrayData::ISampler2D,
+    "iimage2D"               => ast::TypeSpecifierNonArrayData::IImage2D,
+    "isampler3D"             => ast::TypeSpecifierNonArrayData::ISampler3D,
+    "iimage3D"               => ast::TypeSpecifierNonArrayData::IImage3D,
+    "isamplerCube"           => ast::TypeSpecifierNonArrayData::ISamplerCube,
+    "iimageCube"             => ast::TypeSpecifierNonArrayData::IImageCube,
+    "isampler2DRect"         => ast::TypeSpecifierNonArrayData::ISampler2DRect,
+    "iimage2DRect"           => ast::TypeSpecifierNonArrayData::IImage2DRect,
+    "isampler1DArray"        => ast::TypeSpecifierNonArrayData::ISampler1DArray,
+    "iimage1DArray"          => ast::TypeSpecifierNonArrayData::IImage1DArray,
+    "isampler2DArray"        => ast::TypeSpecifierNonArrayData::ISampler2DArray,
+    "iimage2DArray"          => ast::TypeSpecifierNonArrayData::IImage2DArray,
+    "isamplerBuffer"         => ast::TypeSpecifierNonArrayData::ISamplerBuffer,
+    "iimageBuffer"           => ast::TypeSpecifierNonArrayData::IImageBuffer,
+    "isampler2DMS"           => ast::TypeSpecifierNonArrayData::ISampler2DMs,
+    "iimage2DMS"             => ast::TypeSpecifierNonArrayData::IImage2DMs,
+    "isampler2DMSArray"      => ast::TypeSpecifierNonArrayData::ISampler2DMsArray,
+    "iimage2DMSArray"        => ast::TypeSpecifierNonArrayData::IImage2DMsArray,
+    "isamplerCubeArray"      => ast::TypeSpecifierNonArrayData::ISamplerCubeArray,
+    "iimageCubeArray"        => ast::TypeSpecifierNonArrayData::IImageCubeArray,
+    "atomic_uint"            => ast::TypeSpecifierNonArrayData::AtomicUInt,
+    "usampler1D"             => ast::TypeSpecifierNonArrayData::USampler1D,
+    "uimage1D"               => ast::TypeSpecifierNonArrayData::UImage1D,
+    "usampler2D"             => ast::TypeSpecifierNonArrayData::USampler2D,
+    "uimage2D"               => ast::TypeSpecifierNonArrayData::UImage2D,
+    "usampler3D"             => ast::TypeSpecifierNonArrayData::USampler3D,
+    "uimage3D"               => ast::TypeSpecifierNonArrayData::UImage3D,
+    "usamplerCube"           => ast::TypeSpecifierNonArrayData::USamplerCube,
+    "uimageCube"             => ast::TypeSpecifierNonArrayData::UImageCube,
+    "usampler2DRect"         => ast::TypeSpecifierNonArrayData::USampler2DRect,
+    "uimage2DRect"           => ast::TypeSpecifierNonArrayData::UImage2DRect,
+    "usampler1DArray"        => ast::TypeSpecifierNonArrayData::USampler1DArray,
+    "uimage1DArray"          => ast::TypeSpecifierNonArrayData::UImage1DArray,
+    "usampler2DArray"        => ast::TypeSpecifierNonArrayData::USampler2DArray,
+    "uimage2DArray"          => ast::TypeSpecifierNonArrayData::UImage2DArray,
+    "usamplerBuffer"         => ast::TypeSpecifierNonArrayData::USamplerBuffer,
+    "uimageBuffer"           => ast::TypeSpecifierNonArrayData::UImageBuffer,
+    "usampler2DMS"           => ast::TypeSpecifierNonArrayData::USampler2DMs,
+    "uimage2DMS"             => ast::TypeSpecifierNonArrayData::UImage2DMs,
+    "usampler2DMSArray"      => ast::TypeSpecifierNonArrayData::USampler2DMsArray,
+    "uimage2DMSArray"        => ast::TypeSpecifierNonArrayData::UImage2DMsArray,
+    "usamplerCubeArray"      => ast::TypeSpecifierNonArrayData::USamplerCubeArray,
+    "uimageCubeArray"        => ast::TypeSpecifierNonArrayData::UImageCubeArray,
+};
+
+type_specifier_non_array: ast::TypeSpecifierNonArray = {
+    <l:@L> <t:type_specifier_non_struct> <r:@R> => t.spanned(l, r),
+    <l:@L> <s:struct_specifier>          <r:@R> => ast::TypeSpecifierNonArrayData::Struct(s).spanned(l, r),
+    <l:@L> <t:type_name>                 <r:@R> => ast::TypeSpecifierNonArrayData::TypeName(t).spanned(l, r),
+};
+
+type_specifier: ast::TypeSpecifier = {
+    <l:@L> <t:type_specifier_non_array> <a:array_specifier?> <r:@R> =>
+        ast::TypeSpecifierData { ty: t, array_specifier: a }.spanned(l, r)
+};
+
+type_qualifier_spec_data: ast::TypeQualifierSpecData = {
+    <storage_qualifier>       => ast::TypeQualifierSpecData::Storage(<>),
+    <layout_qualifier>        => ast::TypeQualifierSpecData::Layout(<>),
+    <precision_qualifier>     => ast::TypeQualifierSpecData::Precision(<>),
+    <interpolation_qualifier> => ast::TypeQualifierSpecData::Interpolation(<>),
+    "invariant"               => ast::TypeQualifierSpecData::Invariant,
+    "precise"                 => ast::TypeQualifierSpecData::Precise,
+};
+
+type_qualifier_spec: ast::TypeQualifierSpec = {
+    <l:@L> <s:type_qualifier_spec_data> <r:@R> => s.spanned(l, r)
+};
+
+type_qualifier: ast::TypeQualifier = {
+    <l:@L> <t:type_qualifier_spec+> <r:@R> => ast::TypeQualifierData { qualifiers: t }.spanned(l, r)
+};
+
+fully_specified_type: ast::FullySpecifiedType = {
+    <l:@L> <q:type_qualifier?> <s:type_specifier> <r:@R> =>
+        ast::FullySpecifiedTypeData { qualifier: q, ty: s }.spanned(l, r)
+};
+
+fun_identifier_data: ast::FunIdentifierData = {
+    type_specifier     => ast::FunIdentifierData::TypeSpecifier(Box::new(<>)),
+    postfix_expression => ast::FunIdentifierData::Expr(Box::new(<>)),
+};
+
+fun_identifier: ast::FunIdentifier = {
+    <l:@L> <i:fun_identifier_data> <r:@R> => i.spanned(l, r)
+};
+
+unary_expression: ast::Expr = {
+    postfix_expression,
+    <a:@L> <o:unary_op> <e:unary_expression> <b:@R> => ast::ExprData::Unary(o, Box::new(e)).spanned(a, b),
+};
+
+unary_op_data: ast::UnaryOpData = {
+    "+"  => ast::UnaryOpData::Add,
+    "-"  => ast::UnaryOpData::Minus,
+    "!"  => ast::UnaryOpData::Not,
+    "~"  => ast::UnaryOpData::Complement,
+    "++" => ast::UnaryOpData::Inc,
+    "--" => ast::UnaryOpData::Dec,
+};
+
+unary_op: ast::UnaryOp = {
+    <l:@L> <u:unary_op_data> <r:@R> => u.spanned(l, r)
+};
+
+arrayed_identifier: ast::ArrayedIdentifier = {
+    <l:@L> <i:identifier> <a:array_specifier?> <r:@R> =>
+        ast::ArrayedIdentifierData { ident: i.0, array_spec: a }.spanned(l, r),
+};
+
+multiplicative_expression: ast::Expr = {
+    unary_expression,
+    <a:@L> <l:multiplicative_expression> <c:@L> "*" <d:@R> <r:unary_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Mult.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:multiplicative_expression> <c:@L> "/" <d:@R> <r:unary_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Div.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:multiplicative_expression> <c:@L> "%" <d:@R> <r:unary_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Mod.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+additive_expression: ast::Expr = {
+    multiplicative_expression,
+    <a:@L> <l:additive_expression> <c:@L> "+" <d:@R> <r:multiplicative_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Add.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:additive_expression> <c:@L> "-" <d:@R> <r:multiplicative_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Sub.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+shift_expression: ast::Expr = {
+    additive_expression,
+    <a:@L> <l:shift_expression> <c:@L> "<<" <d:@R> <r:additive_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::LShift.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:shift_expression> <c:@L> ">>" <d:@R> <r:additive_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::RShift.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+relational_expression: ast::Expr = {
+    shift_expression,
+    <a:@L> <l:relational_expression> <c:@L> "<" <d:@R> <r:shift_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Lt.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:relational_expression> <c:@L> ">" <d:@R> <r:shift_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Gt.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:relational_expression> <c:@L> "<=" <d:@R> <r:shift_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Lte.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:relational_expression> <c:@L> ">=" <d:@R> <r:shift_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Gte.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+equality_expression: ast::Expr = {
+    relational_expression,
+    <a:@L> <l:equality_expression> <c:@L> "==" <d:@R> <r:relational_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Equal.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+    <a:@L> <l:equality_expression> <c:@L> "!=" <d:@R> <r:relational_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::NonEqual.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+and_expression: ast::Expr = {
+    equality_expression,
+    <a:@L> <l:and_expression> <c:@L> "&" <d:@R> <r:equality_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::BitAnd.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+exclusive_or_expression: ast::Expr = {
+    and_expression,
+    <a:@L> <l:exclusive_or_expression> <c:@L> "^" <d:@R> <r:and_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::BitXor.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+inclusive_or_expression: ast::Expr = {
+    exclusive_or_expression,
+    <a:@L> <l:inclusive_or_expression> <c:@L> "|" <d:@R> <r:exclusive_or_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::BitOr.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+logical_and_expression: ast::Expr = {
+    inclusive_or_expression,
+    <a:@L> <l:logical_and_expression> <c:@L> "&&" <d:@R> <r:inclusive_or_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::And.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+logical_xor_expression: ast::Expr = {
+    logical_and_expression,
+    <a:@L> <l:logical_xor_expression> <c:@L> "^^" <d:@R> <r:logical_and_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Xor.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+logical_or_expression: ast::Expr = {
+    logical_xor_expression,
+    <a:@L> <l:logical_or_expression> <c:@L> "||" <d:@R> <r:logical_xor_expression> <b:@R> =>
+        ast::ExprData::Binary(ast::BinaryOpData::Or.spanned(c, d), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+conditional_expression: ast::Expr = {
+    logical_or_expression,
+    <a:@L> <c:logical_or_expression> "?" <l:expr> ":" <r:assignment_expression> <b:@R> =>
+        ast::ExprData::Ternary(Box::new(c), Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+assignment_expression: ast::Expr = {
+    conditional_expression,
+    <a:@L> <l:unary_expression> <o:assignment_op> <r:assignment_expression> <b:@R> =>
+        ast::ExprData::Assignment(Box::new(l), o, Box::new(r)).spanned(a, b),
+};
+
+assignment_op_data: ast::AssignmentOpData = {
+    "="   => ast::AssignmentOpData::Equal,
+    "*="  => ast::AssignmentOpData::Mult,
+    "/="  => ast::AssignmentOpData::Div,
+    "%="  => ast::AssignmentOpData::Mod,
+    "+="  => ast::AssignmentOpData::Add,
+    "-="  => ast::AssignmentOpData::Sub,
+    "<<=" => ast::AssignmentOpData::LShift,
+    ">>=" => ast::AssignmentOpData::RShift,
+    "&="  => ast::AssignmentOpData::And,
+    "^="  => ast::AssignmentOpData::Xor,
+    "|="  => ast::AssignmentOpData::Or,
+};
+
+assignment_op: ast::AssignmentOp = {
+    <l:@L> <o:assignment_op_data> <r:@R> => o.spanned(l, r)
+};
+
+expr: ast::Expr = {
+    assignment_expression,
+    <a:@L> <l:expr> "," <r:assignment_expression> <b:@R> =>
+        ast::ExprData::Comma(Box::new(l), Box::new(r)).spanned(a, b),
+};
+
+expr_statement: ast::ExprStatement = {
+    <l:@L> <e:expr?> ";" <r:@R> => ast::ExprStatementData(e).spanned(l, r),
+};
+
+selection_statement_else<S>: ast::SelectionStatement = {
+    <a:@L> "if" "(" <e:expr> ")" <c:@L> <r:statement_no_short_if> "else" <s:S> <d:@R> <b:@R> => ast::SelectionStatementData {
+        cond: Box::new(e),
+        rest: ast::SelectionRestStatementData::Else(Box::new(r), Box::new(s)).spanned(c, d),
+    }.spanned(a, b)
+};
+
+selection_statement<S>: ast::SelectionStatement = {
+    <a:@L> "if" "(" <e:expr> ")" <c:@L> <r:statement> <d:@R> <b:@R> => ast::SelectionStatementData {
+        cond: Box::new(e),
+        rest: ast::SelectionRestStatementData::Statement(Box::new(r)).spanned(c, d),
+    }.spanned(a, b),
+    selection_statement_else<S>,
+};
+
+switch_statement: ast::SwitchStatement = {
+    <a:@L> "switch" "(" <e:expr> ")" "{" <s:statement*> "}" <b:@R> => ast::SwitchStatementData {
+        head: Box::new(e),
+        body: s,
+    }.spanned(a, b)
+};
+
+case_label_data: ast::CaseLabelData = {
+    "case" <expr> ":" => ast::CaseLabelData::Case(Box::new(<>)),
+    "default" ":"     => ast::CaseLabelData::Def,
+};
+
+case_label: ast::CaseLabel = {
+    <l:@L> <c:case_label_data> <r:@R> => c.spanned(l, r)
+};
+
+initializer_data: ast::InitializerData = {
+    <assignment_expression>               => ast::InitializerData::Simple(Box::new(<>)),
+    "{" <comma_trailing<initializer>> "}" => ast::InitializerData::List(<>),
+};
+
+initializer: ast::Initializer = {
+    <l:@L> <i:initializer_data> <r:@R> => i.spanned(l, r)
+};
+
+condition_data: ast::ConditionData = {
+    <expr> => ast::ConditionData::Expr(<>),
+    <t:fully_specified_type> <i:identifier> "=" <e:initializer> => ast::ConditionData::Assignment(Box::new(t), i.0, e),
+};
+
+condition: ast::Condition = {
+    <l:@L> <c:condition_data> <r:@R> => c.spanned(l, r)
+};
+
+for_init_statement_data: ast::ForInitStatementData = {
+    <expr_statement> => ast::ForInitStatementData::Expression(<>.content.0),
+    <declaration>    => ast::ForInitStatementData::Declaration(Box::new(<>)),
+};
+
+for_init_statement: ast::ForInitStatement = {
+    <l:@L> <f:for_init_statement_data> <r:@R> => f.spanned(l, r)
+};
+
+for_rest_statement: ast::ForRestStatement = {
+    <l:@L> <c:condition?> ";" <e:expr?> <r:@R> =>
+        ast::ForRestStatementData { condition: c, post_expr: e.map(Box::new) }.spanned(l, r)
+};
+
+iteration_statement<S>: ast::IterationStatement = {
+    <a:@L> "while" "(" <c:condition> ")" <s:S> <b:@R> =>
+        ast::IterationStatementData::While(c, Box::new(s)).spanned(a, b),
+    <a:@L> "do" <s:statement> "while" "(" <c:expr> ")" ";" <b:@R> =>
+        ast::IterationStatementData::DoWhile(Box::new(s), Box::new(c)).spanned(a, b),
+    <a:@L> "for" "(" <init:for_init_statement> <rest:for_rest_statement> ")" <s:S> <b:@R> =>
+        ast::IterationStatementData::For(init, rest, Box::new(s)).spanned(a, b),
+};
+
+jump_statement_data: ast::JumpStatementData = {
+    "continue" ";"         => ast::JumpStatementData::Continue,
+    "break" ";"            => ast::JumpStatementData::Break,
+    "discard" ";"          => ast::JumpStatementData::Discard,
+    "return" <e:expr?> ";" => ast::JumpStatementData::Return(e.map(Box::new)),
+};
+
+jump_statement: ast::JumpStatement = {
+    <l:@L> <j:jump_statement_data> <r:@R> => j.spanned(l, r)
+};
+
+simple_statement<S, I>: ast::Statement = {
+    <l:@L> <s:jump_statement>         <r:@R> => ast::StatementData::Jump(s).spanned(l, r),
+    <l:@L> <s:iteration_statement<S>> <r:@R> => ast::StatementData::Iteration(s).spanned(l, r),
+    <l:@L> <s:case_label>             <r:@R> => ast::StatementData::CaseLabel(s).spanned(l, r),
+    <l:@L> <s:switch_statement>       <r:@R> => ast::StatementData::Switch(s).spanned(l, r),
+    <l:@L> <s:I>                      <r:@R> => ast::StatementData::Selection(s).spanned(l, r),
+    <l:@L> <s:declaration>            <r:@R> => ast::StatementData::Declaration(s).spanned(l, r),
+    <l:@L> <s:expr_statement>         <r:@R> => ast::StatementData::Expression(s).spanned(l, r),
+};
+
+compound_statement: ast::CompoundStatement = {
+    <l:@L> "{" <s:statement*> "}" <r:@R> => ast::CompoundStatementData { statement_list: s }.spanned(l, r),
+};
+
+statement: ast::Statement = {
+    compound_statement => <>.map_spanned(ast::StatementData::Compound),
+    simple_statement<statement, selection_statement<statement>>,
+};
+
+statement_no_short_if: ast::Statement = {
+    compound_statement => <>.map_spanned(ast::StatementData::Compound),
+    simple_statement<statement_no_short_if, selection_statement_else<statement_no_short_if>>,
+};
+
+interpolation_qualifier_data: ast::InterpolationQualifierData = {
+    "smooth"        => ast::InterpolationQualifierData::Smooth,
+    "flat"          => ast::InterpolationQualifierData::Flat,
+    "noperspective" => ast::InterpolationQualifierData::NoPerspective,
+};
+
+interpolation_qualifier: ast::InterpolationQualifier = {
+    <l:@L> <i:interpolation_qualifier_data> <r:@R> => i.spanned(l, r)
+};
+
+precision_qualifier_data: ast::PrecisionQualifierData = {
+    "highp"   => ast::PrecisionQualifierData::High,
+    "mediump" => ast::PrecisionQualifierData::Medium,
+    "lowp"    => ast::PrecisionQualifierData::Low,
+};
+
+precision_qualifier: ast::PrecisionQualifier = {
+    <l:@L> <p:precision_qualifier_data> <r:@R> => p.spanned(l, r)
+};
+
+storage_qualifier_data: ast::StorageQualifierData = {
+    "const"     => ast::StorageQualifierData::Const,
+    "inout"     => ast::StorageQualifierData::InOut,
+    "in"        => ast::StorageQualifierData::In,
+    "out"       => ast::StorageQualifierData::Out,
+    "centroid"  => ast::StorageQualifierData::Centroid,
+    "patch"     => ast::StorageQualifierData::Patch,
+    "sample"    => ast::StorageQualifierData::Sample,
+    "uniform"   => ast::StorageQualifierData::Uniform,
+    "buffer"    => ast::StorageQualifierData::Buffer,
+    "shared"    => ast::StorageQualifierData::Shared,
+    "coherent"  => ast::StorageQualifierData::Coherent,
+    "volatile"  => ast::StorageQualifierData::Volatile,
+    "restrict"  => ast::StorageQualifierData::Restrict,
+    "readonly"  => ast::StorageQualifierData::ReadOnly,
+    "writeonly" => ast::StorageQualifierData::WriteOnly,
+    "subroutine" <t:("(" <comma<type_specifier>> ")")?> =>
+        ast::StorageQualifierData::Subroutine(t.unwrap_or_else(|| vec![])),
+};
+
+storage_qualifier: ast::StorageQualifier = {
+    <l:@L> <s:storage_qualifier_data> <r:@R> => s.spanned(l, r)
+};
+
+layout_qualifier_spec_data: ast::LayoutQualifierSpecData = {
+    "shared" => ast::LayoutQualifierSpecData::Shared,
+    <i:identifier> "=" <c:conditional_expression> => ast::LayoutQualifierSpecData::Identifier(i.0, Some(Box::new(c))),
+    <identifier> => ast::LayoutQualifierSpecData::Identifier(<>.0, None),
+};
+
+layout_qualifier_spec: ast::LayoutQualifierSpec = {
+    <l:@L> <s:layout_qualifier_spec_data> <r:@R> => s.spanned(l, r)
+};
+
+layout_qualifier: ast::LayoutQualifier = {
+    <l:@L> "layout" "(" <s:comma<layout_qualifier_spec>> ")" <r:@R> =>
+        ast::LayoutQualifierData { ids: s }.spanned(l, r),
+};
+
+precision_declaration: ast::DeclarationData = {
+    "precision" <q:precision_qualifier> <t:type_specifier> => ast::DeclarationData::Precision(q, t),
+};
+
+function_parameter_declarator: ast::FunctionParameterDeclarator = {
+    <l:@L> <s:type_specifier> <i:arrayed_identifier> <r:@R> => ast::FunctionParameterDeclaratorData {
+        ty: s,
+        ident: i,
+    }.spanned(l, r)
+};
+
+function_parameter_declaration: ast::FunctionParameterDeclaration = {
+    <l:@L> <q:type_qualifier?> <s:type_specifier> <r:@R> =>
+        ast::FunctionParameterDeclarationData::Unnamed(q, s).spanned(l, r),
+    <l:@L> <q:type_qualifier?> <d:function_parameter_declarator> <r:@R> =>
+        ast::FunctionParameterDeclarationData::Named(q, d).spanned(l, r),
+}
+
+function_prototype: (ast::FunctionPrototype, LexerContext) = {
+    <l:@L> <rt:fully_specified_type> <n:identifier> "(" <p:comma<function_parameter_declaration>> ")" <r:@R> =>
+        (
+            ast::FunctionPrototypeData {
+                ty: rt,
+                name: n.0,
+                parameters: p,
+            }.spanned(l, r),
+            n.1,
+        )
+};
+
+single_declaration_data: ast::SingleDeclarationData = {
+    <t:fully_specified_type> <i:arrayed_identifier> <e:("=" <initializer>)?> => {
+        let i = i.into_inner();
+        ast::SingleDeclarationData {
+            ty: t,
+            name: Some(i.ident),
+            array_specifier: i.array_spec,
+            initializer: e,
+        }
+    },
+    <t:fully_specified_type> => ast::SingleDeclarationData {
+        ty: t,
+        name: None,
+        array_specifier: None,
+        initializer: None,
+    },
+};
+
+single_declaration: ast::SingleDeclaration = {
+    <l:@L> <s:single_declaration_data> <r:@R> => s.spanned(l, r)
+};
+
+single_declaration_no_type: ast::SingleDeclarationNoType = {
+    <l:@L> <i:arrayed_identifier> <e:("=" <initializer>)?> <r:@R> => ast::SingleDeclarationNoTypeData {
+        ident: i,
+        initializer: e,
+    }.spanned(l, r)
+};
+
+init_declarator_list: ast::InitDeclaratorList = {
+    <l:@L> <h:single_declaration> <t:("," <single_declaration_no_type>)*> <r:@R> => ast::InitDeclaratorListData {
+        head: h,
+        tail: t,
+    }.spanned(l, r)
+};
+
+block_declaration: ast::Block = {
+    <l:@L> <q:type_qualifier> <n:identifier> "{" <f:struct_field_specifier*> "}" <a:arrayed_identifier?> <r:@R> =>
+        ast::BlockData { qualifier: q, name: n.0, fields: f, identifier: a }.spanned(l, r)
+};
+
+declaration: ast::Declaration = {
+    <l:@L> <p:function_prototype> ";"    <r:@R> => {
+        p.1.new_identifier(&p.0.name, IdentifierContext::FunctionPrototype);
+        ast::DeclarationData::FunctionPrototype(p.0).spanned(l, r)
+    },
+    <l:@L> <i:init_declarator_list> ";"  <r:@R> => ast::DeclarationData::InitDeclaratorList(i).spanned(l, r),
+    <l:@L> <p:precision_declaration> ";" <r:@R> => p.spanned(l, r),
+    <l:@L> <b:block_declaration> ";"     <r:@R> => ast::DeclarationData::Block(b).spanned(l, r),
+};
+
+function_definition: ast::FunctionDefinition = {
+    <l:@L> <p:function_prototype> <s:compound_statement> <r:@R> => ast::FunctionDefinitionData {
+        prototype: p.0,
+        statement: s,
+    }.spanned(l, r)
+};
+
+pp_define_object_like: ast::PreprocessorDefineData = {
+    <i:identifier> <r:pp_rest> => ast::PreprocessorDefineData::ObjectLike {
+        ident: i.0,
+        value: r.into(),
+    }
+}
+
+pp_define_function_like: ast::PreprocessorDefineData = {
+    <i:identifier> "(" <p:comma<identifier>> ")" <r:pp_rest> => ast::PreprocessorDefineData::FunctionLike {
+        ident: i.0,
+        args: p.into_iter().map(|n| n.0).collect(),
+        value: r.into(),
+    }
+}
+
+preprocessor_define_data = {
+    pp_define_function_like,
+    pp_define_object_like,
+};
+
+preprocessor_define: ast::PreprocessorDefine = {
+    <l:@L> <d:preprocessor_define_data> <r:@R> => d.spanned(l, r),
+};
+
+preprocessor_else_if: ast::PreprocessorElseIf = {
+    <l:@L> <p:pp_rest> <r:@R> => ast::PreprocessorElseIfData { condition: p.into() }.spanned(l, r)
+};
+
+preprocessor_error: ast::PreprocessorError = {
+    <l:@L> <p:pp_rest> <r:@R> => ast::PreprocessorErrorData { message: p.into() }.spanned(l, r)
+};
+
+preprocessor_if: ast::PreprocessorIf = {
+    <l:@L> <p:pp_rest> <r:@R> => ast::PreprocessorIfData { condition: p.into() }.spanned(l, r)
+};
+
+preprocessor_if_def: ast::PreprocessorIfDef = {
+    <l:@L> <i:identifier> <r:@R> => ast::PreprocessorIfDefData { ident: i.0 }.spanned(l, r)
+};
+
+preprocessor_if_n_def: ast::PreprocessorIfNDef = {
+    <l:@L> <i:identifier> <r:@R> => ast::PreprocessorIfNDefData { ident: i.0 }.spanned(l, r)
+};
+
+preprocessor_include: ast::PreprocessorInclude = {
+    <l:@L> <p:pp_path_relative> <r:@R> =>
+        ast::PreprocessorIncludeData {
+            path: ast::PathData::Relative(p.as_str().to_owned()).spanned(l, r)
+        }.spanned(l, r),
+    <l:@L> <p:pp_path_absolute> <r:@R> =>
+        ast::PreprocessorIncludeData {
+            path: ast::PathData::Absolute(p.as_str().to_owned()).spanned(l, r)
+        }.spanned(l, r),
+};
+
+preprocessor_line: ast::PreprocessorLine = {
+    <l:@L> <i:int_constant> <f:int_constant?> <r:@R> => ast::PreprocessorLineData {
+        line: <Token as Into<i32>>::into(i) as u32,
+        source_string_number: f.map(|n| <Token as Into<i32>>::into(n) as u32),
+    }.spanned(l, r)
+};
+
+preprocessor_pragma: ast::PreprocessorPragma = {
+    <l:@L> <p:pp_rest> <r:@R> => ast::PreprocessorPragmaData { command: p.into() }.spanned(l, r)
+};
+
+preprocessor_undef: ast::PreprocessorUndef = {
+    <l:@L> <n:identifier> <r:@R> => ast::PreprocessorUndefData { name: n.0 }.spanned(l, r)
+};
+
+preprocessor_version_profile_data: ast::PreprocessorVersionProfileData = {
+    "core"          => ast::PreprocessorVersionProfileData::Core,
+    "compatibility" => ast::PreprocessorVersionProfileData::Compatibility,
+    "es"            => ast::PreprocessorVersionProfileData::Es,
+};
+
+preprocessor_version_profile: ast::PreprocessorVersionProfile = {
+    <l:@L> <p:preprocessor_version_profile_data> <r:@R> => p.spanned(l, r)
+};
+
+preprocessor_version: ast::PreprocessorVersion = {
+    <l:@L> <v:int_constant> <p:preprocessor_version_profile?> <r:@R> => ast::PreprocessorVersionData {
+        version: <Token as Into<i32>>::into(v) as u16,
+        profile: p,
+    }.spanned(l, r)
+};
+
+preprocessor_extension_behavior_data: ast::PreprocessorExtensionBehaviorData = {
+    "require" => ast::PreprocessorExtensionBehaviorData::Require,
+    "enable"  => ast::PreprocessorExtensionBehaviorData::Enable,
+    "warn"    => ast::PreprocessorExtensionBehaviorData::Warn,
+    "disable" => ast::PreprocessorExtensionBehaviorData::Disable,
+};
+
+preprocessor_extension_behavior: ast::PreprocessorExtensionBehavior = {
+    <l:@L> <p:preprocessor_extension_behavior_data> <r:@R> => p.spanned(l, r)
+};
+
+preprocessor_extension: ast::PreprocessorExtension = {
+    <l:@L> <i:ident> <b:(":" <preprocessor_extension_behavior>)?> <r:@R> => ast::PreprocessorExtensionData {
+        name: if i.as_str() == "all" {
+            ast::PreprocessorExtensionNameData::All.spanned(l, r)
+        } else {
+            ast::PreprocessorExtensionNameData::Specific(i.as_str().into()).spanned(l, r)
+        },
+        behavior: b,
+    }.spanned(l, r)
+};
+
+preprocessor: ast::Preprocessor = {
+    <l:@L> "#define"    <p:preprocessor_define>    <r:@R> => ast::PreprocessorData::Define(p).spanned(l, r),
+    <l:@L> "#else"                                 <r:@R> => ast::PreprocessorData::Else.spanned(l, r),
+    <l:@L> "#elif"      <p:preprocessor_else_if>   <r:@R> => ast::PreprocessorData::ElseIf(p).spanned(l, r),
+    <l:@L> "#endif"                                <r:@R> => ast::PreprocessorData::EndIf.spanned(l, r),
+    <l:@L> "#error"     <p:preprocessor_error>     <r:@R> => ast::PreprocessorData::Error(p).spanned(l, r),
+    <l:@L> "#if"        <p:preprocessor_if>        <r:@R> => ast::PreprocessorData::If(p).spanned(l, r),
+    <l:@L> "#ifdef"     <p:preprocessor_if_def>    <r:@R> => ast::PreprocessorData::IfDef(p).spanned(l, r),
+    <l:@L> "#ifndef"    <p:preprocessor_if_n_def>  <r:@R> => ast::PreprocessorData::IfNDef(p).spanned(l, r),
+    <l:@L> "#include"   <p:preprocessor_include>   <r:@R> => ast::PreprocessorData::Include(p).spanned(l, r),
+    <l:@L> "#line"      <p:preprocessor_line>      <r:@R> => ast::PreprocessorData::Line(p).spanned(l, r),
+    <l:@L> "#pragma"    <p:preprocessor_pragma>    <r:@R> => ast::PreprocessorData::Pragma(p).spanned(l, r),
+    <l:@L> "#undef"     <p:preprocessor_undef>     <r:@R> => ast::PreprocessorData::Undef(p).spanned(l, r),
+    <l:@L> "#version"   <p:preprocessor_version>   <r:@R> => ast::PreprocessorData::Version(p).spanned(l, r),
+    <l:@L> "#extension" <p:preprocessor_extension> <r:@R> => ast::PreprocessorData::Extension(p).spanned(l, r),
+};
+
+external_declaration: Option<ast::ExternalDeclaration> = {
+    <l:@L> <p:preprocessor> <r:@R>        => Some(ast::ExternalDeclarationData::Preprocessor(p).spanned(l, r)),
+    <l:@L> <f:function_definition> <r:@R> => Some(ast::ExternalDeclarationData::FunctionDefinition(f).spanned(l, r)),
+    <l:@L> <d:declaration> <r:@R>         => Some(ast::ExternalDeclarationData::Declaration(d).spanned(l, r)),
+    ";"                                   => None,
+};
+
+translation_unit: ast::TranslationUnit = {
+    <external_declaration*> => ast::TranslationUnit(<>.into_iter().filter_map(|d| d).collect())
+};
+
+#[cfg(feature = "parser-expr")]
+pub Expr            = { expr };
+#[cfg(feature = "parser-preprocessor")]
+pub Preprocessor    = { preprocessor };
+#[cfg(feature = "parser-statement")]
+pub Statement       = { statement };
+pub TranslationUnit = { translation_unit };
+
+extern {
+    type Location = LexerPosition;
+    type Error = LexicalError;
+
+    enum Token<'i> {
+        ident                    => Token::Identifier((_, _)),
+        ty_name                  => Token::TypeName(_),
+        int_constant             => Token::IntConstant(_),
+        uint_constant            => Token::UIntConstant(_),
+        bool_constant            => Token::BoolConstant(_),
+        float_constant           => Token::FloatConstant(_),
+        double_constant          => Token::DoubleConstant(_),
+        "("                      => Token::LeftParen,
+        ")"                      => Token::RightParen,
+        "["                      => Token::LeftBracket,
+        "]"                      => Token::RightBracket,
+        "."                      => Token::Dot,
+        "++"                     => Token::IncOp,
+        "--"                     => Token::DecOp,
+        "void"                   => Token::Void,
+        "+"                      => Token::Plus,
+        "-"                      => Token::Dash,
+        "!"                      => Token::Bang,
+        "~"                      => Token::Tilde,
+        "*"                      => Token::Star,
+        "/"                      => Token::Slash,
+        "%"                      => Token::Percent,
+        "<<"                     => Token::LeftOp,
+        ">>"                     => Token::RightOp,
+        "<"                      => Token::LeftAngle,
+        ">"                      => Token::RightAngle,
+        "<="                     => Token::LeOp,
+        ">="                     => Token::GeOp,
+        "=="                     => Token::EqOp,
+        "!="                     => Token::NeOp,
+        "&"                      => Token::Ampersand,
+        "^"                      => Token::Caret,
+        "|"                      => Token::VerticalBar,
+        "&&"                     => Token::AndOp,
+        "^^"                     => Token::XorOp,
+        "||"                     => Token::OrOp,
+        "?"                      => Token::Question,
+        ":"                      => Token::Colon,
+        "="                      => Token::Equal,
+        "*="                     => Token::MulAssign,
+        "/="                     => Token::DivAssign,
+        "%="                     => Token::ModAssign,
+        "+="                     => Token::AddAssign,
+        "-="                     => Token::SubAssign,
+        "<<="                    => Token::LeftAssign,
+        ">>="                    => Token::RightAssign,
+        "&="                     => Token::AndAssign,
+        "^="                     => Token::XorAssign,
+        "|="                     => Token::OrAssign,
+        ","                      => Token::Comma,
+        "{"                      => Token::LeftBrace,
+        "}"                      => Token::RightBrace,
+        ";"                      => Token::Semicolon,
+        "smooth"                 => Token::Smooth,
+        "flat"                   => Token::Flat,
+        "noperspective"          => Token::NoPerspective,
+        "highp"                  => Token::HighPrecision,
+        "mediump"                => Token::MediumPrecision,
+        "lowp"                   => Token::LowPrecision,
+        "const"                  => Token::Const,
+        "inout"                  => Token::InOut,
+        "in"                     => Token::In,
+        "out"                    => Token::Out,
+        "centroid"               => Token::Centroid,
+        "patch"                  => Token::Patch,
+        "sample"                 => Token::Sample,
+        "uniform"                => Token::Uniform,
+        "buffer"                 => Token::Buffer,
+        "shared"                 => Token::Shared,
+        "coherent"               => Token::Coherent,
+        "volatile"               => Token::Volatile,
+        "restrict"               => Token::Restrict,
+        "readonly"               => Token::ReadOnly,
+        "writeonly"              => Token::WriteOnly,
+        "subroutine"             => Token::Subroutine,
+        "layout"                 => Token::Layout,
+        "precision"              => Token::Precision,
+        "void"                   => Token::Void,
+        "bool"                   => Token::Bool,
+        "int"                    => Token::Int,
+        "uint"                   => Token::UInt,
+        "float"                  => Token::Float,
+        "double"                 => Token::Double,
+        "vec2"                   => Token::Vec2,
+        "vec3"                   => Token::Vec3,
+        "vec4"                   => Token::Vec4,
+        "dvec2"                  => Token::DVec2,
+        "dvec3"                  => Token::DVec3,
+        "dvec4"                  => Token::DVec4,
+        "bvec2"                  => Token::BVec2,
+        "bvec3"                  => Token::BVec3,
+        "bvec4"                  => Token::BVec4,
+        "ivec2"                  => Token::IVec2,
+        "ivec3"                  => Token::IVec3,
+        "ivec4"                  => Token::IVec4,
+        "uvec2"                  => Token::UVec2,
+        "uvec3"                  => Token::UVec3,
+        "uvec4"                  => Token::UVec4,
+        "mat2"                   => Token::Mat2,
+        "mat3"                   => Token::Mat3,
+        "mat4"                   => Token::Mat4,
+        "mat2x2"                 => Token::Mat2x2,
+        "mat2x3"                 => Token::Mat2x3,
+        "mat2x4"                 => Token::Mat2x4,
+        "mat3x2"                 => Token::Mat3x2,
+        "mat3x3"                 => Token::Mat3x3,
+        "mat3x4"                 => Token::Mat3x4,
+        "mat4x2"                 => Token::Mat4x2,
+        "mat4x3"                 => Token::Mat4x3,
+        "mat4x4"                 => Token::Mat4x4,
+        "dmat2"                  => Token::DMat2,
+        "dmat3"                  => Token::DMat3,
+        "dmat4"                  => Token::DMat4,
+        "dmat2x2"                => Token::DMat2x2,
+        "dmat2x3"                => Token::DMat2x3,
+        "dmat2x4"                => Token::DMat2x4,
+        "dmat3x2"                => Token::DMat3x2,
+        "dmat3x3"                => Token::DMat3x3,
+        "dmat3x4"                => Token::DMat3x4,
+        "dmat4x2"                => Token::DMat4x2,
+        "dmat4x3"                => Token::DMat4x3,
+        "dmat4x4"                => Token::DMat4x4,
+        "sampler1D"              => Token::Sampler1D,
+        "image1D"                => Token::Image1D,
+        "sampler2D"              => Token::Sampler2D,
+        "image2D"                => Token::Image2D,
+        "sampler3D"              => Token::Sampler3D,
+        "image3D"                => Token::Image3D,
+        "samplerCube"            => Token::SamplerCube,
+        "imageCube"              => Token::ImageCube,
+        "sampler2DRect"          => Token::Sampler2DRect,
+        "image2DRect"            => Token::Image2DRect,
+        "sampler1DArray"         => Token::Sampler1DArray,
+        "image1DArray"           => Token::Image1DArray,
+        "sampler2DArray"         => Token::Sampler2DArray,
+        "image2DArray"           => Token::Image2DArray,
+        "samplerBuffer"          => Token::SamplerBuffer,
+        "imageBuffer"            => Token::ImageBuffer,
+        "sampler2DMS"            => Token::Sampler2DMs,
+        "image2DMS"              => Token::Image2DMs,
+        "sampler2DMSArray"       => Token::Sampler2DMsArray,
+        "image2DMSArray"         => Token::Image2DMsArray,
+        "samplerCubeArray"       => Token::SamplerCubeArray,
+        "imageCubeArray"         => Token::ImageCubeArray,
+        "sampler1DShadow"        => Token::Sampler1DShadow,
+        "sampler2DShadow"        => Token::Sampler2DShadow,
+        "sampler2DRectShadow"    => Token::Sampler2DRectShadow,
+        "sampler1DArrayShadow"   => Token::Sampler1DArrayShadow,
+        "sampler2DArrayShadow"   => Token::Sampler2DArrayShadow,
+        "samplerCubeShadow"      => Token::SamplerCubeShadow,
+        "samplerCubeArrayShadow" => Token::SamplerCubeArrayShadow,
+        "isampler1D"             => Token::ISampler1D,
+        "iimage1D"               => Token::IImage1D,
+        "isampler2D"             => Token::ISampler2D,
+        "iimage2D"               => Token::IImage2D,
+        "isampler3D"             => Token::ISampler3D,
+        "iimage3D"               => Token::IImage3D,
+        "isamplerCube"           => Token::ISamplerCube,
+        "iimageCube"             => Token::IImageCube,
+        "isampler2DRect"         => Token::ISampler2DRect,
+        "iimage2DRect"           => Token::IImage2DRect,
+        "isampler1DArray"        => Token::ISampler1DArray,
+        "iimage1DArray"          => Token::IImage1DArray,
+        "isampler2DArray"        => Token::ISampler2DArray,
+        "iimage2DArray"          => Token::IImage2DArray,
+        "isamplerBuffer"         => Token::ISamplerBuffer,
+        "iimageBuffer"           => Token::IImageBuffer,
+        "isampler2DMS"           => Token::ISampler2DMs,
+        "iimage2DMS"             => Token::IImage2DMs,
+        "isampler2DMSArray"      => Token::ISampler2DMsArray,
+        "iimage2DMSArray"        => Token::IImage2DMsArray,
+        "isamplerCubeArray"      => Token::ISamplerCubeArray,
+        "iimageCubeArray"        => Token::IImageCubeArray,
+        "atomic_uint"            => Token::AtomicUInt,
+        "usampler1D"             => Token::USampler1D,
+        "uimage1D"               => Token::UImage1D,
+        "usampler2D"             => Token::USampler2D,
+        "uimage2D"               => Token::UImage2D,
+        "usampler3D"             => Token::USampler3D,
+        "uimage3D"               => Token::UImage3D,
+        "usamplerCube"           => Token::USamplerCube,
+        "uimageCube"             => Token::UImageCube,
+        "usampler2DRect"         => Token::USampler2DRect,
+        "uimage2DRect"           => Token::UImage2DRect,
+        "usampler1DArray"        => Token::USampler1DArray,
+        "uimage1DArray"          => Token::UImage1DArray,
+        "usampler2DArray"        => Token::USampler2DArray,
+        "uimage2DArray"          => Token::UImage2DArray,
+        "usamplerBuffer"         => Token::USamplerBuffer,
+        "uimageBuffer"           => Token::UImageBuffer,
+        "usampler2DMS"           => Token::USampler2DMs,
+        "uimage2DMS"             => Token::UImage2DMs,
+        "usampler2DMSArray"      => Token::USampler2DMsArray,
+        "uimage2DMSArray"        => Token::UImage2DMsArray,
+        "usamplerCubeArray"      => Token::USamplerCubeArray,
+        "uimageCubeArray"        => Token::UImageCubeArray,
+        "invariant"              => Token::Invariant,
+        "precise"                => Token::Precise,
+        "else"                   => Token::Else,
+        "if"                     => Token::If,
+        "switch"                 => Token::Switch,
+        "case"                   => Token::Case,
+        "default"                => Token::Default,
+        "while"                  => Token::While,
+        "do"                     => Token::Do,
+        "for"                    => Token::For,
+        "continue"               => Token::Continue,
+        "break"                  => Token::Break,
+        "discard"                => Token::Discard,
+        "return"                 => Token::Return,
+        "struct"                 => Token::Struct,
+        "#define"                => Token::PpDefine,
+        "#else"                  => Token::PpElse,
+        "#elif"                  => Token::PpElif,
+        "#endif"                 => Token::PpEndIf,
+        "#error"                 => Token::PpError,
+        "#if"                    => Token::PpIf,
+        "#ifdef"                 => Token::PpIfDef,
+        "#ifndef"                => Token::PpIfNDef,
+        "#include"               => Token::PpInclude,
+        "#line"                  => Token::PpLine,
+        "#pragma"                => Token::PpPragma,
+        "#undef"                 => Token::PpUndef,
+        "#version"               => Token::PpVersion,
+        "#extension"             => Token::PpExtension,
+        pp_rest                  => Token::PpRest(_),
+        "core"                   => Token::PpCore,
+        "compatibility"          => Token::PpCompatibility,
+        "es"                     => Token::PpEs,
+        "require"                => Token::PpExtRequire,
+        "enable"                 => Token::PpExtEnable,
+        "warn"                   => Token::PpExtWarn,
+        "disable"                => Token::PpExtDisable,
+        pp_path_absolute         => Token::PpPathAbsolute(_),
+        pp_path_relative         => Token::PpPathRelative(_),
+    }
+}
+
+// vim: ft=rust
