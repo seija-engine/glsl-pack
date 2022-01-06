@@ -16,7 +16,7 @@ mod errors;
 mod compiler;
 mod pkg_inst;
 
-pub use compiler::{DepSearchGen};
+pub use compiler::{};
 
 #[derive(Debug,Default,Hash,PartialEq, Eq,Clone)]
 pub struct MacroGroup {

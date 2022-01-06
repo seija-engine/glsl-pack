@@ -1,6 +1,6 @@
 use std::{sync::Arc};
 use text_macro::{MacroContext};
-use crate::{MacroGroup, package::{PackageInfo, Package}, walk_glsl_folder, ast::{ASTPackage, SymbolName}, compiler::CompileEnv, DepSearchGen};
+use crate::{MacroGroup, package::{PackageInfo}, walk_glsl_folder, ast::{ASTPackage}};
 
 #[derive(Debug)]
 pub struct PackageInstance {
@@ -36,22 +36,4 @@ impl PackageInstance {
         mc.exp_all();
         mc
     }
-}
-
-#[test]
-fn load_package() {
-    
-    env_logger::init();
-    let mut pkg = Package::load("../tests/core/").unwrap();
-    let macros = &MacroGroup::new(vec!["HAS_POSITION".to_string()]);
-    let sym_vs = SymbolName::parse("core.color.vs_main");
-    let sym_fs = SymbolName::parse("core.color.fs_main");
-
-    let mut env = CompileEnv::new();
-    let inst = pkg.get_inst(macros);
-    let mut search_gen = DepSearchGen::new(inst);
-    let mut out_string = String::default();
-    search_gen.run(vec![sym_vs],&mut out_string,&mut env);
-
-    println!("{}",out_string);
 }

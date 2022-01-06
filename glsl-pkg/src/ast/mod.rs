@@ -7,7 +7,7 @@ mod errors;
 pub use ast_file::ASTFile;
 pub use ast_package::ASTPackage;
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq, Eq,Hash)]
 pub struct SymbolName {
     quals:Vec<String>,
     name:String
@@ -28,9 +28,4 @@ impl SymbolName {
 
         SymbolName { quals: names, name: cur_name }
     }
-}
-
-#[derive(Debug)]
-pub struct UseInfo {
-    pub name:SymbolName
 }
