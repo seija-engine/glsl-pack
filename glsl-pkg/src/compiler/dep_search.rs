@@ -172,42 +172,83 @@ impl DepSearch {
             StatementData::Switch(switch) => {
                 self.search_stmt_switch(switch, file, pkg_inst);
             },
-            StatementData::CaseLabel(v) => {
-                match &v.content {
-                    CaseLabelData::Case(expr) => {
-                        self.search_expr(&expr, file, pkg_inst);
-                    },
-                    _ => {}
-                }
-            },
+            StatementData::CaseLabel(v) => {  log::warn!("error case:{:?}",&v); },
             StatementData::Iteration(iter) => {
                 match &iter.content {
                     IterationStatementData::DoWhile(stmt,expr) => {
-                        self.search_stmt(stmt, file, pkg_inst);
-                        self.search_expr(expr, file, pkg_inst);
+                        self.search_stmt_do_while(stmt,expr,file, pkg_inst);
                     },
                     IterationStatementData::While(cond,stmt) => {
-                        self.search_stmt(stmt, file, pkg_inst);
+                        self.search_stmt_while(cond,stmt, file, pkg_inst);
+                    },
+                    IterationStatementData::For(for_init,for_reset,stmt) => {
+                        self.search_stmt_for(for_init, for_reset, stmt, file, pkg_inst);
                     }
-                    _ => {}
                 }
             },
+            StatementData::Jump(_) => {},
             StatementData::Compound(v) => {
+                self.enter_scope();
                 for stmt in v.statement_list.iter() {
                     self.search_stmt(stmt, file, pkg_inst);
                 }
+                self.exit_scope();
             }
-            _ => {}
         }
     }
 
-    
+    fn search_stmt_for(&mut self,for_init:&ForInitStatement,for_reset:&ForRestStatement,stmt:&Statement,file:&ASTFile,pkg_inst:&PackageInstance) {
+        //todo
+        self.enter_scope();
+        match &stmt.content {
+            StatementData::Compound(lst) => {
+                for s in lst.statement_list.iter() {
+                    self.search_stmt(s, file, pkg_inst)
+                }
+            },
+            _ => self.search_stmt(stmt, file, pkg_inst)
+        }
+        self.exit_scope();
+    }
+
+    fn search_stmt_do_while(&mut self,stmt:&Statement,expr:&Expr,file:&ASTFile,pkg_inst:&PackageInstance) {
+        self.search_stmt(stmt, file, pkg_inst);
+        self.search_expr(expr, file, pkg_inst);
+    }
+
+    fn search_stmt_while(&mut self,cond:&Condition,stmt:&Statement,file:&ASTFile,pkg_inst:&PackageInstance) {
+        self.enter_scope();
+        match &cond.content {
+            ConditionData::Assignment(full_type,id,initer) => {
+                self.search_type(&full_type.ty, file, pkg_inst);
+                self.last_scope().push(id.0.as_str());
+                self.search_initializer(initer,file,pkg_inst);
+            },
+            ConditionData::Expr(expr) => {self.search_expr(expr, file, pkg_inst) }
+        }
+        match &stmt.content {
+            StatementData::Compound(lst) => {
+                for s in lst.statement_list.iter() {
+                    self.search_stmt(s, file, pkg_inst)
+                }
+            },
+            _ => self.search_stmt(stmt, file, pkg_inst)
+        }
+       
+        self.exit_scope();
+    }
 
     fn search_stmt_switch(&mut self,switch:&SwitchStatement,file:&ASTFile,pkg_inst:&PackageInstance) {
         self.search_expr(&switch.head, file, pkg_inst);
         for stmt in switch.body.iter() {
+            match &stmt.content {
+                StatementData::CaseLabel(_) => {},
+                StatementData::Jump(_) => {},
+                _ => {
+                   self.search_stmt(stmt, file, pkg_inst);
+                }
+            }
             
-            self.search_stmt(stmt, file, pkg_inst);
         }
     }
 
@@ -217,19 +258,16 @@ impl DepSearch {
         self.search_expr(&select.cond, file, pkg_inst);
         match &select.rest.content {
             SelectionRestStatementData::Else(s1,s2) => {
-                
-                //self.search_stmt(s1, file, pkg_inst);
-                
-                //self.search_stmt(s2, file, pkg_inst);
+               self.search_stmt(s1, file, pkg_inst);
+               self.search_stmt(&s2, file, pkg_inst);
             },
             SelectionRestStatementData::Statement(s) => {
-                self.enter_scope();
-                self.search_stmt(s, file, pkg_inst);
-                self.exit_scope();
+                self.search_stmt(&s, file, pkg_inst);
             }
         }
     }
-
+    
+   
     fn search_fn_prototype(&mut self,fp:&FunctionPrototype,file:&ASTFile,pkg_inst:&PackageInstance) {
        self.search_type(&fp.content.ty.ty, file,pkg_inst);
        for param in fp.content.parameters.iter() {

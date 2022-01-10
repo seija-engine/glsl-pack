@@ -6,11 +6,11 @@ use core.math;
 CustomType vs_main(float paramA,const float paramB,float cache) {
     float a = pow5(123);
    
-    if(a > 3) {
-       float a0 = 1;
+    
+    while(int qq = 2) {
+      int c = 13;
     }
     
-
     a = cPI;
 }
 
