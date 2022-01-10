@@ -1,9 +1,14 @@
 ////////////生成的代码////////////////////
 layout(location = 0) vec3 vert_position;
 
-#if defined(VERTEX_COLOR)
-  layout(location = 1) vec4 vert_color;
+#ifdef HAS_COLOR
+layout(location = 1) vec3 vert_color;
 #endif
+
+#ifdef HAS_NORMAL
+layout(location = 2) vec3 vert_normal;
+#endif
+
 
 //Transform3D
 mat4 getTransformMatrix() {
