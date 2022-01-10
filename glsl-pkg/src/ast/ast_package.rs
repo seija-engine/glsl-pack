@@ -24,6 +24,10 @@ impl ASTPackage {
     
     pub fn find_decl(&self,sym:&SymbolName) -> Option<(&ExternalDeclaration,Arc<ASTFile>)> {
         for (pkg_path,file) in self.files.iter() {
+            if sym.quals == pkg_path.paths {
+                return file.find_local_decl(&sym.name).map(|v| (v,file.clone()))
+            }
+            /* 
             if sym.quals.len() > 0 && sym.quals[0] == self.name {
                 if sym.quals[1..] == pkg_path.paths {
                     return file.find_local_decl(&sym.name).map(|v| (v,file.clone()))
@@ -31,7 +35,7 @@ impl ASTPackage {
             }
             else if sym.quals == pkg_path.paths {
                 return file.find_local_decl(&sym.name).map(|v| (v,file.clone()))
-            }
+            }*/
         }
         None
     }

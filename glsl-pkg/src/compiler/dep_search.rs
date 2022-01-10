@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use glsl_lang::ast::*;
 use crate::ast::{SymbolName, ASTFile};
 use crate::pkg_inst::PackageInstance;
@@ -30,11 +30,20 @@ impl DepSearch {
         DepSearch {symbols:vec![], sets:HashSet::default(),scopes:Vec::new() }
     }
 
-    pub fn search(&mut self,syms:Vec<SymbolName>,pkg_inst:&PackageInstance) {
-        
+    pub fn search(&mut self,syms:&Vec<SymbolName>,pkg_inst:&PackageInstance) -> Vec<SymbolName> {
         for name in syms.iter() {
             self.search_symbol(name,pkg_inst);
         }
+
+        self.scopes.clear();
+        self.sets.clear();
+        let mut outs = vec![];
+        for ar_sym in self.symbols.drain(..) {
+            if let Ok(ns) = Arc::try_unwrap(ar_sym) {
+                outs.push(ns);
+            }
+        }
+        outs
     }
 
     fn search_symbol(&mut self,sym_name:&SymbolName,pkg_inst:&PackageInstance) {
@@ -62,7 +71,7 @@ impl DepSearch {
 
     fn search_init_decl(&mut self,decl:&InitDeclaratorList,file:&ASTFile,pkg_inst:&PackageInstance) {
         if let Some(head_name) = decl.head.name.as_ref() {
-            self.last_scope().push(head_name.as_str());
+            self.push_last_scope(head_name.as_str());
         }
         self.search_type(&decl.content.head.content.ty.ty, file,pkg_inst);
         if let Some(initer) = decl.content.head.content.initializer.as_ref() {
@@ -71,7 +80,7 @@ impl DepSearch {
 
         for no_type_decl in decl.tail.iter() {
             let decl_name = no_type_decl.ident.ident.as_str();
-            self.last_scope().push(decl_name);
+            self.push_last_scope(decl_name);
         }
     }
 
@@ -198,8 +207,32 @@ impl DepSearch {
     }
 
     fn search_stmt_for(&mut self,for_init:&ForInitStatement,for_reset:&ForRestStatement,stmt:&Statement,file:&ASTFile,pkg_inst:&PackageInstance) {
-        //todo
         self.enter_scope();
+        match &for_init.content {
+            ForInitStatementData::Expression(expr) => {
+                if let Some(e) = expr {
+                    self.search_expr(e, file, pkg_inst);
+                }
+            },
+            ForInitStatementData::Declaration(decl) => {
+                self.search_decl(decl, file, pkg_inst);
+            }
+        }
+
+        if let Some(cond) = for_reset.condition.as_ref() {
+            match &cond.content {
+                ConditionData::Expr(e) => self.search_expr(e, file, pkg_inst),
+                ConditionData::Assignment(full_type,id,initer) => {
+                    self.search_type(&full_type.ty, file, pkg_inst);
+                    self.push_last_scope(id.0.as_str());
+                    self.search_initializer(initer,file,pkg_inst);
+                }
+            }
+        }
+
+        if let Some(e) = for_reset.post_expr.as_ref() {
+            self.search_expr(e, file, pkg_inst);
+        }
         match &stmt.content {
             StatementData::Compound(lst) => {
                 for s in lst.statement_list.iter() {
@@ -221,7 +254,7 @@ impl DepSearch {
         match &cond.content {
             ConditionData::Assignment(full_type,id,initer) => {
                 self.search_type(&full_type.ty, file, pkg_inst);
-                self.last_scope().push(id.0.as_str());
+                self.push_last_scope(id.0.as_str());
                 self.search_initializer(initer,file,pkg_inst);
             },
             ConditionData::Expr(expr) => {self.search_expr(expr, file, pkg_inst) }
@@ -300,7 +333,7 @@ impl DepSearch {
         for param in params.iter() {
             match &param.content {
                 FunctionParameterDeclarationData::Named(_,v) => {
-                    self.last_scope().push(v.content.ident.ident.0.as_str());
+                    self.push_last_scope(v.content.ident.ident.0.as_str());
                 },
                 _ => {}   
             }
@@ -312,12 +345,17 @@ impl DepSearch {
     }
 
     fn exit_scope(&mut self) {
-        dbg!(&self.scopes);
         self.scopes.pop();
     }
 
-    fn last_scope(&mut self) -> &mut SymbolScope {
-        self.scopes.last_mut().unwrap()
+    fn push_last_scope(&mut self,name:&str) {
+        if let Some(last_scope) = self.last_scope() {
+            last_scope.push(name)
+        }
+    }
+
+    fn last_scope(&mut self) -> Option<&mut SymbolScope> {
+        self.scopes.last_mut()
     }
 
     fn add_search_sym(&mut self,sym:SymbolName) {
@@ -336,25 +374,4 @@ impl DepSearch {
         }
         false
     }
-}
-
-
-#[test]
-fn load_package() {
-    use crate::package::Package;
-    use crate::MacroGroup;
-
-    env_logger::init();
-    let mut pkg = Package::load("../tests/core/").unwrap();
-    let macros = &MacroGroup::new(vec!["HAS_POSITION".to_string()]);
-    let sym_vs = SymbolName::parse("core.color.vs_main");
-    //let sym_fs = SymbolName::parse("core.color.fs_main");
-
-
-    let inst = pkg.get_inst(macros);
-    let mut dep_search = DepSearch::new();
-    dep_search.search(vec![sym_vs],&inst);
-
-    dbg!(&dep_search.symbols);
-
 }

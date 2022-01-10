@@ -1,6 +1,6 @@
 mod compiler;
 mod shader_compiler;
-mod dep_search_gen;
+mod sym_generator;
 mod dep_search;
 mod compile_env;
 mod backend;
