@@ -42,28 +42,9 @@ impl SymbolGenerator {
             }
         }
 
-        std::fs::write(self.inst.info.path.join("testOut.glsl"), out);
+        
     }
 }
 
 
 
-
-#[test]
-fn load_package() {
-    use crate::package::Package;
-    use crate::MacroGroup;
-
-    env_logger::init();
-    let mut pkg = Package::load("../tests/core/").unwrap();
-    let macros = &MacroGroup::new(vec!["HAS_POSITION".to_string()]);
-    let sym_vs = SymbolName::parse("color.vs_main");
-
-
-    let inst = pkg.get_inst(macros);
-    let mut generator = SymbolGenerator::new(inst);
-    generator.run(vec![sym_vs]);
-
-    
-
-}

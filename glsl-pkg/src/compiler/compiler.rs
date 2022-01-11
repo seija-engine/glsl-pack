@@ -2,7 +2,7 @@ use std::{path::{PathBuf, Path}, sync::Arc};
 
 use crate::{MacroGroup, shader::Shader, pkg_inst::PackageInstance};
 
-use super::{compile_env::CompileEnv, shader_compiler::ShaderCompiler};
+use super::{compile_env::CompileEnv, shader_compiler::ShaderCompiler, SeijaShaderBackend};
 
 
 #[derive(Default)]
@@ -32,11 +32,16 @@ impl Compiler {
     }
 
     pub fn run(&mut self,cache:&mut CompileEnv) {
+        let mut out_string = String::default();
+
+        let backend = SeijaShaderBackend::new();
         let pkg_inst = cache.get_pkg_inst(&self.config.path, &self.config.macro_group);
         for shader in pkg_inst.info.shaders.iter() {
             let mut shader_compiler = ShaderCompiler::new(shader.clone(),pkg_inst.clone());
-            shader_compiler.compile();
+            shader_compiler.compile(&backend,&mut out_string);
         }
+
+        std::fs::write(pkg_inst.info.path.join("testOut.glsl"), out_string);
     }
 }
 
