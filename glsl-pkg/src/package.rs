@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::{path::Path};
 use anyhow::Result;
-use anyhow::{anyhow,bail};
+use anyhow::{bail};
 use serde_json::Value;
 use crate::MacroGroup;
 use crate::errors::PackageLoadError;

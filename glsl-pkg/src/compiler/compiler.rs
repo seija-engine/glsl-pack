@@ -41,7 +41,7 @@ impl Compiler {
             shader_compiler.compile(&backend,&mut out_string);
         }
 
-        std::fs::write(pkg_inst.info.path.join("testOut.glsl"), out_string);
+        std::fs::write(pkg_inst.info.path.join("../testOut.glsl"), out_string);
     }
 }
 

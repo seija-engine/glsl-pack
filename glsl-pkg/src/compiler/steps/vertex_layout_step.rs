@@ -25,6 +25,4 @@ pub fn run_vetex_layout_step<W:Write>(shader:&Shader,vert_names:&HashMap<String,
             writer.write_str("#endif\r\n").unwrap();
         }
     }
-   
-   
 }
