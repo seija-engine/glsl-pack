@@ -52,6 +52,10 @@ impl IShaderBackend for SeijaShaderBackend {
         traits.insert("Camera".into(), get_camera_trait);
         traits
     }
+
+    fn write_vs_after_vertex<W:Write>(&self, writer:&mut W) {
+        
+    }
 }
 
 fn get_camera_trait<W:Write>(writer:&mut W) {
