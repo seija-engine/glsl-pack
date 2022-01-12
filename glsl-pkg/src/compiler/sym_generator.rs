@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, fmt::Write};
 
 use glsl_lang::transpiler::glsl::{FormattingState, show_external_declaration};
 
@@ -18,11 +18,9 @@ impl SymbolGenerator {
         SymbolGenerator { inst,symbols:vec![],fs:FormattingState::default() }
     }
 
-    pub fn run(&mut self,symbols:Vec<SymbolName>) {
-        self.symbols.push(symbols);
+    pub fn run<W:Write>(&mut self,symbols:Vec<SymbolName>,writer:&mut W) {
         let mut dep_search = DepSearch::new();
-
-        let mut search_symbols:&Vec<SymbolName> = self.symbols.last().unwrap();
+        let mut search_symbols:&Vec<SymbolName> = &symbols;
         loop {
             let new_symbols = dep_search.search(search_symbols, &self.inst);
             
@@ -31,11 +29,11 @@ impl SymbolGenerator {
             if search_symbols.len() == 0 { break }
         }
 
-        let mut out:String = String::default();
+
         for symbol_lst in self.symbols.iter().rev() {
             for symbol in symbol_lst.iter().rev() {
                 if let Some((decl,_)) = self.inst.ast_pkg.find_decl(symbol) {
-                    show_external_declaration(&mut out, decl, &mut self.fs).unwrap();
+                    show_external_declaration(writer, decl, &mut self.fs).unwrap();
                 } else {
                     log::warn!("not found:{:?}",symbol);
                 }

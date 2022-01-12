@@ -7,12 +7,12 @@ use crate::errors::ShaderLoadError;
 
 #[derive(Debug)]
 pub struct Shader {
-    name:String,
+    pub name:String,
     pub vertexs:HashMap<String,bool>,
     pub backend:Vec<String>,
-    slots:Vec<String>,
-    vs_main:String,
-    fs_main:String
+    pub slots:Vec<String>,
+    pub vs_main:String,
+    pub fs_main:String
 }
 
 impl Shader {

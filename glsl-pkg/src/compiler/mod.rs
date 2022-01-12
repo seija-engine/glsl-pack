@@ -54,12 +54,26 @@ impl IShaderBackend for SeijaShaderBackend {
     }
 
     fn write_vs_after_vertex<W:Write>(&self, writer:&mut W) {
-        
+        writer.write_str("layout(set = 0, binding = 0) uniform FrameUniforms {\r\n").unwrap();
+        writer.write_str("  mat4 cameraVP;\r\n").unwrap();
+        writer.write_str("  mat4 cameraView;\r\n").unwrap();
+        writer.write_str("  mat4 cameraP;\r\n").unwrap();
+        writer.write_str("  vec4 cameraPos;\r\n").unwrap();
+        writer.write_str("} frameUniforms;\r\n").unwrap();
+
+        writer.write_str("layout(set = 1, binding = 0) objectUniforms {\r\n").unwrap();
+        writer.write_str("  mat4 transform;\r\n").unwrap();
+        writer.write_str("}\r\n").unwrap();
+       
     }
 }
 
 fn get_camera_trait<W:Write>(writer:&mut W) {
     writer.write_str("mat4 getCameraView() {\r\n").unwrap();
-    writer.write_str("  return frameUniform.cameraView;\r\n").unwrap();
+    writer.write_str("  return frameUniforms.cameraView;\r\n").unwrap();
+    writer.write_str("}\r\n").unwrap();
+
+    writer.write_str("mat4 getCameraViewProject() {\r\n").unwrap();
+    writer.write_str("  return frameUniforms.cameraVP;\r\n").unwrap();
     writer.write_str("}\r\n").unwrap();
 }

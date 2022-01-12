@@ -2,7 +2,7 @@ use std::{sync::Arc, fmt::Write, collections::HashMap};
 
 use crate::{shader::Shader, pkg_inst::PackageInstance};
 
-use super::{steps::{run_vetex_layout_step, run_shader_trait_step}, IShaderBackend, compiler::{CompileConfig, Compiler}, CompileEnv};
+use super::{steps::{run_vetex_layout_step, run_shader_trait_step, run_vs_dep_main_step}, IShaderBackend, compiler::{CompileConfig, Compiler}, CompileEnv, sym_generator::{self, SymbolGenerator}};
 
 pub struct ShaderCompiler {
     shader:Arc<Shader>,
@@ -23,7 +23,9 @@ impl ShaderCompiler {
         run_vetex_layout_step(&self.shader,&backend.vertex_names(),writer);
         backend.write_vs_after_vertex(writer);
         run_shader_trait_step(&self.shader, &backend.trait_fns(), writer);
-        // step 3  搜索输出vs_main  //?? 需要替换返回值为void，然后根据返回值生成VSOutput
+        run_vs_dep_main_step(&self.shader, &self.shader.vs_main,self.pkg_inst.clone(), writer);
+
+      
     }
 }
 
