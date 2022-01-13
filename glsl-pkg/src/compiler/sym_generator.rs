@@ -1,4 +1,4 @@
-use std::{sync::Arc, fmt::Write};
+use std::{sync::Arc, fmt::Write, collections::HashSet};
 
 use glsl_lang::transpiler::glsl::{FormattingState, show_external_declaration};
 
@@ -10,7 +10,7 @@ use super::DepSearch;
 pub struct SymbolGenerator {
     inst:Arc<PackageInstance>,
     symbols:Vec<Vec<SymbolName>>,
-    fs:FormattingState<'static>
+    pub fs:FormattingState<'static>
 }
 
 impl SymbolGenerator {
@@ -21,10 +21,18 @@ impl SymbolGenerator {
     pub fn run<W:Write>(&mut self,symbols:Vec<SymbolName>,writer:&mut W) {
         let mut dep_search = DepSearch::new();
         let mut search_symbols:&Vec<SymbolName> = &symbols;
+        let mut all_sets:HashSet<SymbolName> = HashSet::default();
         loop {
-            let new_symbols = dep_search.search(search_symbols, &self.inst);
+            let mut new_symbols = dep_search.search(search_symbols, &self.inst);
+            let mut real_symbols:Vec<SymbolName> = vec![];
+            for sym in new_symbols.drain(..) {
+                if !all_sets.contains(&sym) {
+                    all_sets.insert(sym.clone());
+                    real_symbols.push(sym);
+                }
+            }
             
-            self.symbols.push(new_symbols);
+            self.symbols.push(real_symbols);
             search_symbols = self.symbols.last().unwrap();
             if search_symbols.len() == 0 { break }
         }

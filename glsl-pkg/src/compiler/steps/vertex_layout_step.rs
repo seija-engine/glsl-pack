@@ -18,10 +18,10 @@ pub fn run_vetex_layout_step<W:Write>(shader:&Shader,vert_names:&HashMap<String,
 
     for (name,idx,typ,is_require) in infos.iter() {
         if *is_require {
-            writer.write_fmt(format_args!("layout(location = {}) {} vert_{};\r\n",idx,typ,name.to_lowercase())).unwrap();
+            writer.write_fmt(format_args!("layout(location = {}) in {} vert_{};\r\n",idx,typ,name.to_lowercase())).unwrap();
         } else {
             writer.write_fmt(format_args!("#ifdef VERTEX_{}\r\n",name.to_uppercase())).unwrap();
-            writer.write_fmt(format_args!("layout(location = {}) {} vert_{};\r\n",idx,typ,name.to_lowercase())).unwrap();
+            writer.write_fmt(format_args!("layout(location = {}) in {} vert_{};\r\n",idx,typ,name.to_lowercase())).unwrap();
             writer.write_str("#endif\r\n").unwrap();
         }
     }

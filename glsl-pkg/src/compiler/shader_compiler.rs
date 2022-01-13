@@ -2,7 +2,7 @@ use std::{sync::Arc, fmt::Write, collections::HashMap};
 
 use crate::{shader::Shader, pkg_inst::PackageInstance};
 
-use super::{steps::{run_vetex_layout_step, run_shader_trait_step, run_vs_dep_main_step}, IShaderBackend, compiler::{CompileConfig, Compiler}, CompileEnv, sym_generator::{self, SymbolGenerator}};
+use super::{steps::*, IShaderBackend, compiler::*, CompileEnv, sym_generator::{self, SymbolGenerator}};
 
 pub struct ShaderCompiler {
     shader:Arc<Shader>,

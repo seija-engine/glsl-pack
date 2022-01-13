@@ -61,9 +61,9 @@ impl IShaderBackend for SeijaShaderBackend {
         writer.write_str("  vec4 cameraPos;\r\n").unwrap();
         writer.write_str("} frameUniforms;\r\n").unwrap();
 
-        writer.write_str("layout(set = 1, binding = 0) objectUniforms {\r\n").unwrap();
+        writer.write_str("layout(set = 1, binding = 0) uniform ObjectUniforms {\r\n").unwrap();
         writer.write_str("  mat4 transform;\r\n").unwrap();
-        writer.write_str("}\r\n").unwrap();
+        writer.write_str("} objectUniforms;\r\n").unwrap();
        
     }
 }

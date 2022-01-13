@@ -7,7 +7,7 @@ mod errors;
 pub use ast_file::ASTFile;
 pub use ast_package::ASTPackage;
 
-#[derive(Debug,PartialEq, Eq,Hash)]
+#[derive(Debug,PartialEq, Eq,Hash,Clone)]
 pub struct SymbolName {
     quals:Vec<String>,
     name:String
