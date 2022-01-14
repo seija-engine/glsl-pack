@@ -1,4 +1,5 @@
 mod compiler;
+mod dag;
 mod shader_compiler;
 mod sym_generator;
 mod dep_search;
