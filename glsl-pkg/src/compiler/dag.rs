@@ -1,15 +1,40 @@
-use std::{collections::HashSet, ops::RangeBounds};
+use std::{collections::{HashSet, HashMap, hash_map::DefaultHasher}, hash::{Hash, Hasher}};
 
-#[derive(Default,Debug)]
-pub struct Graph<T> {
-    nodes:Vec<Node<T>>
+#[derive(Debug)]
+pub struct Graph<T:Hash> {
+    nodes:Vec<Node<T>>,
+    pub caches:HashMap<u64,NodeId> //TODO 考虑优化一下
 }
 
-impl<T> Graph<T> {
+
+
+#[derive(Debug)]
+pub struct Node<T> {
+    pub id:NodeId,
+    pub value:T,
+    pub inputs:Vec<Link>,
+    pub outputs:Vec<Link>
+}
+
+impl<T> Graph<T> where T:Hash {
+    pub fn new() -> Graph<T> {
+       
+        Graph { nodes: vec![], caches: HashMap::default() }
+    }
+
     pub fn add(&mut self,value:T) -> NodeId {
-        let new_node = Node::new(value);
+        let node_id = NodeId(self.nodes.len());
+        let new_node = Node::new(value,node_id);
+        let hash_u64 = new_node.hash_u64();
         self.nodes.push(new_node);
-        NodeId(self.nodes.len() - 1)
+        self.caches.insert(hash_u64, node_id);
+        node_id
+    }
+
+    
+
+    pub fn get(&self,id:&NodeId) -> &Node<T> {
+        self.nodes.get(id.0).unwrap()
     }
 
     pub fn add_link(&mut self,form:NodeId,to:NodeId) {
@@ -52,7 +77,7 @@ impl<T> Graph<T> {
 pub struct NodeId(usize);
 
 #[derive(Clone, Copy,Debug)]
-struct Link {
+pub struct Link {
     form:NodeId,
     to:NodeId
 }
@@ -63,23 +88,24 @@ impl Link {
     }
 }
 
-#[derive(Debug)]
-struct Node<T> {
-    pub value:T,
-    pub inputs:Vec<Link>,
-    pub outputs:Vec<Link>
-}
 
-impl<T> Node<T> {
-    pub fn new(t:T) -> Self {
-        Node { value: t, inputs: vec![],outputs:vec![] }
+
+impl<T:Hash> Node<T> {
+    pub fn new(t:T,id:NodeId) -> Self {
+        Node { value: t, inputs: vec![],outputs:vec![],id }
+    }
+
+    fn hash_u64(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.value.hash(&mut hasher);
+        hasher.finish()
     }
 }
 
 
 #[test]
 fn test_graph() {
-    let mut graph:Graph<String> = Graph::default();
+    let mut graph:Graph<String> = Graph::new();
     
     let node_1 = graph.add("1".into());
     let node_2 = graph.add("2".into());

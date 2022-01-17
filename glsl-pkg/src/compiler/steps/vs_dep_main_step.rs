@@ -7,7 +7,7 @@ use crate::{shader::Shader, compiler::sym_generator::SymbolGenerator, pkg_inst::
 pub fn run_vs_dep_main_step<W:Write>(_shader:&Shader,main_name:&str,inst:Arc<PackageInstance>,writer:&mut W) {
    let mut sym_gen = SymbolGenerator::new(inst.clone());
    let main_sym_name = SymbolName::parse(main_name);
-   sym_gen.run(vec![main_sym_name.clone()],writer);
+   sym_gen.run(&main_sym_name,writer);
    
    
 

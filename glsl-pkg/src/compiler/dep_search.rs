@@ -4,6 +4,7 @@ use glsl_lang::ast::*;
 use crate::ast::{SymbolName, ASTFile};
 use crate::pkg_inst::PackageInstance;
 
+#[derive(Debug)]
 pub struct DepSearch {
     pub symbols:Vec<Arc<SymbolName>>,
     pub sets:HashSet<Arc<SymbolName>>,
@@ -30,10 +31,8 @@ impl DepSearch {
         DepSearch {symbols:vec![], sets:HashSet::default(),scopes:Vec::new() }
     }
 
-    pub fn search(&mut self,syms:&Vec<SymbolName>,pkg_inst:&PackageInstance) -> Vec<SymbolName> {
-        for name in syms.iter() {
-            self.search_symbol(name,pkg_inst);
-        }
+    pub fn search(&mut self,sym:&SymbolName,pkg_inst:&PackageInstance) -> Vec<SymbolName> {
+        self.search_symbol(sym,pkg_inst);
 
         self.scopes.clear();
         self.sets.clear();
