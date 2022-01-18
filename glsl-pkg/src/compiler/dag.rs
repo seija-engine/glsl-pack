@@ -1,9 +1,9 @@
 use std::{collections::{HashSet, HashMap, hash_map::DefaultHasher}, hash::{Hash, Hasher}};
 
 #[derive(Debug)]
-pub struct Graph<T:Hash> {
+pub struct Graph<T:Hash + Clone + Eq> {
     nodes:Vec<Node<T>>,
-    pub caches:HashMap<u64,NodeId> //TODO 考虑优化一下
+    pub caches:HashMap<T,NodeId>
 }
 
 
@@ -16,7 +16,7 @@ pub struct Node<T> {
     pub outputs:Vec<Link>
 }
 
-impl<T> Graph<T> where T:Hash {
+impl<T> Graph<T> where T:Hash + Clone + Eq {
     pub fn new() -> Graph<T> {
        
         Graph { nodes: vec![], caches: HashMap::default() }
@@ -25,9 +25,9 @@ impl<T> Graph<T> where T:Hash {
     pub fn add(&mut self,value:T) -> NodeId {
         let node_id = NodeId(self.nodes.len());
         let new_node = Node::new(value,node_id);
-        let hash_u64 = new_node.hash_u64();
+        let clone_t = new_node.value.clone();
         self.nodes.push(new_node);
-        self.caches.insert(hash_u64, node_id);
+        self.caches.insert(clone_t, node_id);
         node_id
     }
 
@@ -74,7 +74,7 @@ impl<T> Graph<T> where T:Hash {
 }
 
 #[derive(Clone, Copy,Debug,Hash,PartialEq, PartialOrd)]
-pub struct NodeId(usize);
+pub struct NodeId(pub usize);
 
 #[derive(Clone, Copy,Debug)]
 pub struct Link {
@@ -93,12 +93,6 @@ impl Link {
 impl<T:Hash> Node<T> {
     pub fn new(t:T,id:NodeId) -> Self {
         Node { value: t, inputs: vec![],outputs:vec![],id }
-    }
-
-    fn hash_u64(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        self.value.hash(&mut hasher);
-        hasher.finish()
     }
 }
 

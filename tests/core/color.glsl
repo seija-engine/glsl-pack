@@ -22,8 +22,7 @@ VSOutput vs_main() {
 
 
 vec4 fs_main(VSOutput vo) {
-   Material material = getMaterial();
-   vec4 color = texture(material.texture,vo.uv);
+   vec4 color = vec4(1);
    return color;
 }
 //---->

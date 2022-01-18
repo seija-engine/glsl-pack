@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Weak};
 use glsl_lang::ast::*;
-use crate::ast::{SymbolName, ASTFile};
+use crate::ast::{SymbolName, ASTFile, RcSymbolName};
 use crate::pkg_inst::PackageInstance;
 
 #[derive(Debug)]
 pub struct DepSearch {
-    pub symbols:Vec<Arc<SymbolName>>,
-    pub sets:HashSet<Arc<SymbolName>>,
+    pub symbols:Vec<RcSymbolName>,
+    pub sets:HashSet<RcSymbolName>,
     scopes:Vec<SymbolScope>,
 }
 
@@ -31,16 +31,14 @@ impl DepSearch {
         DepSearch {symbols:vec![], sets:HashSet::default(),scopes:Vec::new() }
     }
 
-    pub fn search(&mut self,sym:&SymbolName,pkg_inst:&PackageInstance) -> Vec<SymbolName> {
+    pub fn search(&mut self,sym:&SymbolName,pkg_inst:&PackageInstance) -> Vec<RcSymbolName> {
         self.search_symbol(sym,pkg_inst);
 
         self.scopes.clear();
         self.sets.clear();
         let mut outs = vec![];
         for ar_sym in self.symbols.drain(..) {
-            if let Ok(ns) = Arc::try_unwrap(ar_sym) {
-                outs.push(ns);
-            }
+            outs.push(ar_sym);
         }
         outs
     }
@@ -358,10 +356,10 @@ impl DepSearch {
     }
 
     fn add_search_sym(&mut self,sym:SymbolName) {
-        if !self.sets.contains(&sym) {
-            let s = Arc::new(sym);
-            self.sets.insert(s.clone());
-            self.symbols.push(s);
+        let rc_sym:RcSymbolName = sym.into();
+        if !self.sets.contains(&rc_sym) {
+            self.sets.insert(rc_sym.clone());
+            self.symbols.push(rc_sym);
         }
     }
 

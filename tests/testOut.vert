@@ -21,6 +21,13 @@ mat4 getCameraView() {
 mat4 getCameraViewProject() {
   return frameUniforms.cameraVP;
 }
+struct VSOutput {
+    vec3 color;
+    vec3 normal;
+    vec2 uv;
+};
+void slot_vs(VSOutput vs) {
+}
 
 layout(location = 0) out VSOutput _output;
 

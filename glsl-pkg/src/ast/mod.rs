@@ -4,7 +4,7 @@ mod scan_use;
 mod scan_define;
 mod lex_string;
 mod errors;
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}, sync::Arc};
 
 pub use ast_file::ASTFile;
 pub use ast_package::ASTPackage;
@@ -12,8 +12,17 @@ pub use ast_package::ASTPackage;
 #[derive(Debug,PartialEq, Default,Eq,Hash,Clone)]
 pub struct SymbolName {
     quals:Vec<String>,
-    name:String
+    pub name:String
 }
+#[derive(Debug,PartialEq, Default,Eq,Hash,Clone)]
+pub struct RcSymbolName(pub Arc<SymbolName>);
+
+impl Into<RcSymbolName> for SymbolName {
+    fn into(self) -> RcSymbolName {
+        RcSymbolName(Arc::new(self))
+    }
+}
+
 
 impl SymbolName {
     pub fn parse(str:&str) -> Self {
@@ -29,11 +38,5 @@ impl SymbolName {
         }
 
         SymbolName { quals: names, name: cur_name }
-    }
-
-    pub fn hash_u64(&self) -> u64 {
-        let mut hasher = DefaultHasher::default();
-        self.hash(&mut hasher);
-        hasher.finish()
     }
 }

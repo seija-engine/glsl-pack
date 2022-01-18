@@ -13,8 +13,10 @@ pub use compiler::{Compiler};
 
 pub trait IShaderBackend {
     fn write_vs_head<W:Write>(&self,_:&mut W) {}
+    fn write_fs_head<W:Write>(&self,_:&mut W) {}
+    fn write_common_head<W:Write>(&self,_:&mut W) {}
     fn vertex_names(&self) -> &HashMap<String,(usize,String)>;
-    fn write_vs_after_vertex<W:Write>(&self,_:&mut W) {}
+    fn write_uniforms<W:Write>(&self,_:&mut W) {}
 
     fn trait_fns<W:Write>(&self) -> HashMap<String,fn(&mut W)> { HashMap::default() }
 }
@@ -41,9 +43,15 @@ impl SeijaShaderBackend {
 
 
 impl IShaderBackend for SeijaShaderBackend {
-    fn write_vs_head<W:Write>(&self,writer:&mut W) {
+    fn write_common_head<W:Write>(&self, writer:&mut W) {
         writer.write_str("#version 450\r\n").unwrap();
     }
+
+    fn write_fs_head<W:Write>(&self, writer:&mut W) {
+        writer.write_str("layout(location = 0) out vec4 _outColor;\r\n").unwrap();
+      
+    }
+
     fn vertex_names(&self) -> &HashMap<String,(usize,String)> {
        &self.vertexs
     }
@@ -54,7 +62,7 @@ impl IShaderBackend for SeijaShaderBackend {
         traits
     }
 
-    fn write_vs_after_vertex<W:Write>(&self, writer:&mut W) {
+    fn write_uniforms<W:Write>(&self, writer:&mut W) {
         writer.write_str("layout(set = 0, binding = 0) uniform FrameUniforms {\r\n").unwrap();
         writer.write_str("  mat4 cameraVP;\r\n").unwrap();
         writer.write_str("  mat4 cameraView;\r\n").unwrap();

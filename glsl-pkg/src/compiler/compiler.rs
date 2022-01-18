@@ -32,16 +32,18 @@ impl Compiler {
     }
 
     pub fn run(&mut self,cache:&mut CompileEnv) {
-        let mut out_string = String::default();
+        let mut vs_string = String::default();
+        let mut fs_string = String::default();
 
         let backend = SeijaShaderBackend::new();
         let pkg_inst = cache.get_pkg_inst(&self.config.path, &self.config.macro_group);
         for shader in pkg_inst.info.shaders.iter() {
             let mut shader_compiler = ShaderCompiler::new(shader.clone(),pkg_inst.clone());
-            shader_compiler.compile(&backend,&mut out_string);
+            shader_compiler.compile(&backend,&mut vs_string,&mut fs_string);
         }
 
-        std::fs::write(pkg_inst.info.path.join("../testOut.vert"), out_string);
+        std::fs::write(pkg_inst.info.path.join("../testOut.vert"), vs_string);
+        std::fs::write(pkg_inst.info.path.join("../testOut.frag"), fs_string);
     }
 }
 
