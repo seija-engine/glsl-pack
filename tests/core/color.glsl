@@ -23,6 +23,9 @@ VSOutput vs_main() {
 
 vec4 fs_main(VSOutput vo) {
    vec4 color = vec4(1);
+   if(vo.uv.x > 0) {
+      return vec4(1);
+   }
    return color;
 }
 //---->

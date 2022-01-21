@@ -23,5 +23,12 @@ struct VSOutput {
 layout(location = 0) in VSOutput _input;
 
 void main() {
-  _outColor = vec4(1);
+    VSOutput vo = _input;
+    vec4 color = vec4(1);
+    if (vo.uv.x > 0) {
+        _outColor = vec4(1);
+        return ;
+    }
+    _outColor = color;
+    return ;
 }
