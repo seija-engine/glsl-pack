@@ -37,14 +37,3 @@ impl ShaderCompiler {
     }
 }
 
-
-#[test]
-fn test_compiler() {
-    use super::{compiler::*, CompileEnv};
-    env_logger::init();
-    let mut config = CompileConfig::default();
-    config.set_path("../tests/core/");
-    let mut compiler = Compiler::new(config);
-    let mut env = CompileEnv::default();
-    compiler.run(&mut env);
-}

@@ -21,6 +21,11 @@ impl MacroGroup {
     MacroGroup { names }
   }
 
+  pub fn join_to(&self,macros:Vec<String>) -> MacroGroup {
+    let new_names = [self.names.clone(),macros].concat();
+    MacroGroup::new(new_names)
+  }
+
   pub fn hash_base64(&self) -> String {
     let mut hasher = DefaultHasher::default();
     self.names.hash(&mut hasher);
