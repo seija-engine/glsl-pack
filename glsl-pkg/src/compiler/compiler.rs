@@ -123,19 +123,3 @@ impl CompileTask {
         CompileTask { macros: macros, shader_name: name.to_owned() }
     }
 }
-
-
-
-
-#[test]
-fn test_compiler() {
-    use super::SeijaShaderBackend;
-    env_logger::init();
-    let mut config = CompileConfig::new(SeijaShaderBackend::new());
-    config.set_macros(MacroGroup::new(vec!["GLOBAL_M".to_string()]));
-    config.set_source_path("../tests/core/");
-    config.set_out_path("../tests/output/");
-    let mut compiler = Compiler::new(config);
-    
-    compiler.run_task(&CompileTask::new("color", vec!["MATERIAL_M".to_owned()]));
-}

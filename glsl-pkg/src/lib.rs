@@ -8,7 +8,7 @@ mod errors;
 mod compiler;
 mod pkg_inst;
 pub use glsl_pack_rtbase::{MacroGroup};
-pub use compiler::{CompileEnv,Compiler};
+pub use compiler::{CompileEnv,Compiler,IShaderBackend,CompileConfig,CompileTask};
 
 
 
