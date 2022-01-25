@@ -44,10 +44,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
-name = "base64"
-version = "0.13.0"
+name = "base58"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
+checksum = "5024ee8015f02155eee35c711107ddd9a9bf3cb689cf2a9089c97e79b6e1ae83"
 
 [[package]]
 name = "beef"
@@ -215,13 +215,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "glsl-pack-rtbase"
+version = "0.1.0"
+dependencies = [
+ "base58",
+]
+
+[[package]]
 name = "glsl-pkg"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64",
  "env_logger",
  "glsl-lang",
+ "glsl-pack-rtbase",
  "lang-util",
  "log",
  "serde_json",

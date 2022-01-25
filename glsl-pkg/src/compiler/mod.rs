@@ -4,6 +4,7 @@ mod shader_compiler;
 mod sym_generator;
 mod dep_search;
 mod compile_env;
+mod combinadics;
 mod steps;
 use std::{collections::HashMap, fmt::Write};
 pub use dep_search::DepSearch;

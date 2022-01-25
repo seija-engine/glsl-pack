@@ -1,8 +1,8 @@
-use std::{path::{PathBuf, Path}, os, fs, sync::Arc};
+use std::{path::{PathBuf, Path}, fs, sync::Arc};
 
 use crate::{MacroGroup, CompileEnv, compiler::shader_compiler::ShaderCompiler, shader::Shader};
 
-use super::{IShaderBackend, SeijaShaderBackend};
+use super::{IShaderBackend, combinadics::start_combination};
 
 
 
@@ -62,34 +62,39 @@ impl<T> Compiler<T> where T:IShaderBackend {
                     opt_names.push(name.clone());
                 }
             }
-            Self::gen_all_comp_macros(&opt_names);
+            
+            let mut requires:Vec<String> = vec![];
+            let mut options:Vec<String> = vec![];
+            for (v,is_require) in shader.vertexs.iter() {
+                let mut nv = "HAS_".to_string();
+                nv.push_str(v.as_str());
+                if *is_require {
+                    requires.push(nv);
+                } else {
+                    options.push(nv);
+                }
+            }
 
-            self.run_macro(shader, &new_macro_group);    
+            start_combination(options.len(), |idxs| {
+                let mut all_macros:Vec<String> = vec![];
+                for (idx,is_use) in idxs.iter() {
+                    if *is_use {
+                        all_macros.push(options[*idx].clone());
+                    }
+                }
+                for v in requires.iter() {
+                    all_macros.push(v.to_string());
+                }
+                let macro_group = MacroGroup::new(vec![new_macro_group.names.clone(),all_macros].concat());
+                self.run_macro(shader, &macro_group);
+            });
+            
 
         } else {
             log::error!("not found shader:{}",task.shader_name);
         }
     }
 
-    fn gen_all_comp_macros<'a >(names:&'a Vec<String>) -> Vec<Vec<&'a str>> {
-         // 0_t 0_f
-         // 1_t 1_f
-         // 2_t 2_f
-         let mut cache:Vec<Vec<&'a str>> = vec![];
-         let step_index = 0;
-         for i in step_index..names.len() {
-             //t
-             for j in (step_index + 1)..names.len() {
-
-             } 
-             //f
-             for j in (step_index + 1)..names.len() {
-
-            } 
-         }
-
-         vec![]
-    }
 
     fn run_macro(&mut self,shader:&Arc<Shader>,macros:&MacroGroup) {
         let macro_hash = macros.hash_base64();
@@ -102,6 +107,7 @@ impl<T> Compiler<T> where T:IShaderBackend {
         let fs_file_name = format!("{}_{}.frag",shader.name,macro_hash);
         std::fs::write(self.config.out_path.join(vs_file_name), vs_string).unwrap();
         std::fs::write(self.config.out_path.join(fs_file_name), fs_string).unwrap();
+        
     }
 
    
@@ -123,13 +129,13 @@ impl CompileTask {
 
 #[test]
 fn test_compiler() {
-    
+    use super::SeijaShaderBackend;
     env_logger::init();
     let mut config = CompileConfig::new(SeijaShaderBackend::new());
-    config.set_macros(MacroGroup::new(vec!["GRMMA".to_string()]));
+    config.set_macros(MacroGroup::new(vec!["GLOBAL_M".to_string()]));
     config.set_source_path("../tests/core/");
     config.set_out_path("../tests/output/");
     let mut compiler = Compiler::new(config);
     
-    compiler.run_task(&CompileTask::new("color", vec!["HAS_COLOR".to_owned()]));
+    compiler.run_task(&CompileTask::new("color", vec!["MATERIAL_M".to_owned()]));
 }

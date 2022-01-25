@@ -1,0 +1,7 @@
+[package]
+name = "glsl-pack-rtbase"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+base58 = "0.1.0"

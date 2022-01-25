@@ -10,8 +10,9 @@ walkdir = "2.3.2"
 log = "0.4.14"
 anyhow = "1.0.41"
 thiserror = "1.0.25"
-base64 = "0.13.0"
+
 serde_json = "1.0.64"
 text-macro = { path = "../text-macro" }
 lang-util = { path = "../glsl-lang/lang-util" }
 glsl-lang = { path = "../glsl-lang/lang" }
+glsl-pack-rtbase = {path = "../glsl-pack-rtbase" }
