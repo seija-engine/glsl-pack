@@ -4,7 +4,7 @@ use base58::ToBase58;
 
 #[derive(Debug,Default,Hash,PartialEq, Eq,Clone)]
 pub struct MacroGroup {
-  names:Vec<String>
+   pub names:Vec<String>
 }
 
 impl MacroGroup {
