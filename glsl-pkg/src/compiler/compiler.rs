@@ -66,7 +66,7 @@ impl<T> Compiler<T> where T:IShaderBackend {
             let mut requires:Vec<String> = vec![];
             let mut options:Vec<String> = vec![];
             for (v,is_require) in shader.vertexs.iter() {
-                let mut nv = "HAS_".to_string();
+                let mut nv = "VERTEX_".to_string();
                 nv.push_str(v.as_str());
                 if *is_require {
                     requires.push(nv);
