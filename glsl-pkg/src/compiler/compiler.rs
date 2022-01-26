@@ -1,68 +1,19 @@
 use std::{path::{PathBuf, Path}, fs, sync::Arc};
 
-use crate::{MacroGroup, CompileEnv, compiler::shader_compiler::ShaderCompiler, shader::Shader};
+use crate::{MacroGroup, CompileEnv, compiler::shader_compiler::ShaderCompiler, shader::Shader, package::Package, pkg_inst::PackageInstance};
 
 use super::{IShaderBackend, combinadics::start_combination};
 
 
 
 
-
-
-
-pub struct CompileConfig<T:IShaderBackend> {
-    source_path:PathBuf,
-    out_path:PathBuf,
-    macro_group:MacroGroup,
-    backend:T
-}
-
-impl<T> CompileConfig<T> where T:IShaderBackend {
-    pub fn new(backend:T) -> Self {
-        CompileConfig { backend,source_path:Default::default(),out_path:Default::default(),macro_group:MacroGroup::default()}
-    }
-    pub fn set_source_path<P:AsRef<Path>>(&mut self,path:P) {
-        self.source_path = path.as_ref().into();
-    }
-
-    pub fn set_out_path<P:AsRef<Path>>(&mut self,path:P) {
-        self.out_path = path.as_ref().into();
-    }
-
-    pub fn set_macros(&mut self,group:MacroGroup) {
-        self.macro_group = group
-    }
-}
-
-
-pub struct Compiler<T:IShaderBackend> {
-    config:CompileConfig<T>,
-    env:CompileEnv
-}
-
-impl<T> Compiler<T> where T:IShaderBackend {
-    pub fn new(config:CompileConfig<T>) -> Self {
-        Compiler { config,env:CompileEnv::new() }
-    }
-
-    pub fn run_task(&mut self,task:&CompileTask) {
-        if !self.config.out_path.exists() {
-            fs::create_dir_all(&self.config.out_path).unwrap();
-        }
-        let new_macro_group = self.config.macro_group.join_to(task.macros.clone());     
-        let pkg_inst = self.env.get_pkg_inst(&self.config.source_path, &new_macro_group);
-        let find_shader = pkg_inst.info.shaders.iter().find(|v| v.name == task.shader_name);
-        if let Some(shader) = find_shader {
-            let mut old_macros = new_macro_group.names.clone();
-            let mut opt_names:Vec<String> = vec![];
-            for (name,is_require) in shader.vertexs.iter() {
-                if *is_require {
-                    old_macros.push(name.to_string());
-                } else {
-                    opt_names.push(name.clone());
-                }
-            }
-            
+pub fn compile_shader<B:IShaderBackend>(package:&mut Package,shader_name:&str,macros:Vec<String>,out_path:PathBuf,backend:&B) -> bool {
+    let macro_group = MacroGroup::new(macros);
+    let pkg_inst = package.get_inst(&macro_group);
+    let find_shader = pkg_inst.info.shaders.iter().find(|v| v.name == shader_name);
+    match find_shader {
+        Some(shader) => {
+            let mut const_macros = macro_group.names.clone();
             let mut requires:Vec<String> = vec![];
             let mut options:Vec<String> = vec![];
             for (v,is_require) in shader.vertexs.iter() {
@@ -74,6 +25,7 @@ impl<T> Compiler<T> where T:IShaderBackend {
                     options.push(nv);
                 }
             }
+            const_macros.extend(requires);
 
             start_combination(options.len(), |idxs| {
                 let mut all_macros:Vec<String> = vec![];
@@ -82,44 +34,26 @@ impl<T> Compiler<T> where T:IShaderBackend {
                         all_macros.push(options[*idx].clone());
                     }
                 }
-                for v in requires.iter() {
-                    all_macros.push(v.to_string());
-                }
-                let macro_group = MacroGroup::new(vec![new_macro_group.names.clone(),all_macros].concat());
-                self.run_macro(shader, &macro_group);
+                all_macros.extend(const_macros.clone());
+                run_macro(&out_path, pkg_inst.clone(), shader, &MacroGroup::new(all_macros), backend);
+                
             });
-            
-
-        } else {
-            log::error!("not found shader:{}",task.shader_name);
-        }
+            true
+        },
+        None => false
     }
+}
 
-
-    fn run_macro(&mut self,shader:&Arc<Shader>,macros:&MacroGroup) {
-        let macro_hash = macros.hash_base64();
-        let pkg_inst = self.env.get_pkg_inst(&self.config.source_path, &macros);
-        let mut vs_string = String::default();
-        let mut fs_string:String = String::default();
-        let mut shader_compiler = ShaderCompiler::new(shader.clone(),pkg_inst.clone());
-        shader_compiler.compile(&self.config.backend,&mut vs_string,&mut fs_string);
-        let vs_file_name = format!("{}_{}.vert",shader.name,macro_hash); 
-        let fs_file_name = format!("{}_{}.frag",shader.name,macro_hash);
-        std::fs::write(self.config.out_path.join(vs_file_name), vs_string).unwrap();
-        std::fs::write(self.config.out_path.join(fs_file_name), fs_string).unwrap();
-        
-    }
-
+fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,shader:&Arc<Shader>,macros:&MacroGroup,backend:&B) {
+    let macro_hash = macros.hash_base64();
    
-}
-
-pub struct  CompileTask {
-    macros:Vec<String>,
-    shader_name:String
-}
-
-impl CompileTask {
-    pub fn new(name:&str,macros:Vec<String>) -> Self {
-        CompileTask { macros: macros, shader_name: name.to_owned() }
-    }
+    let mut vs_string = String::default();
+    let mut fs_string:String = String::default();
+    let mut shader_compiler = ShaderCompiler::new(shader.clone(),pkg_inst.clone());
+    shader_compiler.compile(backend,&mut vs_string,&mut fs_string);
+    let vs_file_name = format!("{}#{}_{}.vert",pkg_inst.info.name,shader.name,macro_hash); 
+    let fs_file_name = format!("{}#{}_{}.frag",pkg_inst.info.name,shader.name,macro_hash);
+    std::fs::write(out_path.join(vs_file_name), vs_string).unwrap();
+    std::fs::write(out_path.join(fs_file_name), fs_string).unwrap();
+    
 }

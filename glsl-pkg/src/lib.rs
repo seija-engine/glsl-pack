@@ -5,10 +5,12 @@ mod ast;
 mod package;
 mod shader;
 mod errors;
+mod pkg_mgr;
 mod compiler;
 mod pkg_inst;
+pub use pkg_mgr::{PackageManager};
 pub use glsl_pack_rtbase::{MacroGroup};
-pub use compiler::{CompileEnv,Compiler,IShaderBackend,CompileConfig,CompileTask};
+pub use compiler::{CompileEnv,IShaderBackend};
 
 
 

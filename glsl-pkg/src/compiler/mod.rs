@@ -9,7 +9,7 @@ mod steps;
 use std::{collections::HashMap, fmt::Write};
 pub use dep_search::DepSearch;
 pub use compile_env::CompileEnv;
-pub use compiler::{Compiler,CompileConfig,CompileTask};
+pub use compiler::{compile_shader};
 
 
 pub trait IShaderBackend {
