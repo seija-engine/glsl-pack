@@ -7,8 +7,8 @@ use super::{IShaderBackend, combinadics::start_combination};
 
 
 
-pub fn compile_shader<B:IShaderBackend>(package:&mut Package,shader_name:&str,macros:Vec<String>,out_path:PathBuf,backend:&B) -> bool {
-    let macro_group = MacroGroup::new(macros);
+pub fn compile_shader<B:IShaderBackend>(package:&mut Package,shader_name:&str,macros:&Vec<String>,out_path:PathBuf,backend:&B) -> bool {
+    let macro_group = MacroGroup::new(macros.clone());
     let pkg_inst = package.get_inst(&macro_group);
     let find_shader = pkg_inst.info.shaders.iter().find(|v| v.name == shader_name);
     match find_shader {
@@ -40,7 +40,10 @@ pub fn compile_shader<B:IShaderBackend>(package:&mut Package,shader_name:&str,ma
             });
             true
         },
-        None => false
+        None => {
+            log::error!("not found shader {} in package {}",shader_name,package.info.name);
+            false
+        }
     }
 }
 

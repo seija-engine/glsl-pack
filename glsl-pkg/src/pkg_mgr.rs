@@ -29,14 +29,13 @@ impl PackageManager {
         self.out_path = path_buf;
     }
 
-    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:Vec<String>,backend:&B) -> bool {
+    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:&Vec<String>,backend:&B) -> bool {
         if !self.out_path.exists() {
             fs::create_dir_all(&self.out_path).unwrap();
         }
         let out_path = self.out_path.clone();
         if let Some(package) = self.get_or_load_pkg(pkg_name) {
-            compile_shader(package,shader_name,macros,out_path,backend);
-            true
+            compile_shader(package,shader_name,macros,out_path,backend)
         } else {
             log::error!("not found package:{}",pkg_name);
             false   
