@@ -8,7 +8,8 @@ use serde_json::Value;
 use crate::MacroGroup;
 use crate::errors::PackageLoadError;
 use crate::pkg_inst::PackageInstance;
-use crate::shader::Shader;
+use crate::shader::read_shader_from_json;
+use glsl_pack_rtbase::shader::{Shader};
 
 #[derive(Debug)]
 pub struct Package {
@@ -55,7 +56,7 @@ impl PackageInfo {
         let json_shaders = json.get("shaders").and_then(Value::as_array).ok_or(PackageLoadError::JsonError("shaders"))?;
         let mut shaders:Vec<Arc<Shader>> = vec![];
         for v in json_shaders {
-            shaders.push(Arc::new(Shader::from_json(v)?));
+            shaders.push(Arc::new(read_shader_from_json(v)?));
         }
         Ok(PackageInfo {
             path:path.as_ref().to_path_buf(),

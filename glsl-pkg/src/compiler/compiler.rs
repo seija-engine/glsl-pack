@@ -1,13 +1,15 @@
 use std::{path::{PathBuf, Path}, fs, sync::Arc};
 
-use crate::{MacroGroup, CompileEnv, compiler::shader_compiler::ShaderCompiler, shader::Shader, package::Package, pkg_inst::PackageInstance};
+use glsl_pack_rtbase::shader::Shader;
+
+use crate::{MacroGroup, CompileEnv, compiler::shader_compiler::ShaderCompiler, package::Package, pkg_inst::PackageInstance};
 
 use super::{IShaderBackend, combinadics::start_combination};
 
 
 
 
-pub fn compile_shader<B:IShaderBackend>(package:&mut Package,shader_name:&str,macros:&Vec<String>,out_path:PathBuf,backend:&B) -> bool {
+pub fn compile_shader<'a,B:IShaderBackend>(package:&'a mut Package,shader_name:&str,macros:&Vec<String>,out_path:PathBuf,backend:&B) -> Option<Arc<Shader>> {
     let macro_group = MacroGroup::new(macros.clone());
     let pkg_inst = package.get_inst(&macro_group);
     let find_shader = pkg_inst.info.shaders.iter().find(|v| v.name == shader_name);
@@ -38,11 +40,11 @@ pub fn compile_shader<B:IShaderBackend>(package:&mut Package,shader_name:&str,ma
                 run_macro(&out_path, pkg_inst.clone(), shader, &MacroGroup::new(all_macros), backend);
                 
             });
-            true
+            Some(shader.clone())
         },
         None => {
             log::error!("not found shader {} in package {}",shader_name,package.info.name);
-            false
+            None
         }
     }
 }

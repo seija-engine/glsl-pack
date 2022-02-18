@@ -1,6 +1,8 @@
 use std::{fmt::Write, collections::HashMap};
 
-use crate::shader::Shader;
+use glsl_pack_rtbase::shader::Shader;
+
+
 
 pub fn run_shader_trait_step<W:Write>(shader:&Shader,trait_fns:&HashMap<String,fn(&mut W)>,writer:&mut W) {
     for trait_name in shader.backend.iter() {

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Write};
 
-use crate::shader::Shader;
+use glsl_pack_rtbase::shader::Shader;
+
 
 
 pub fn run_vetex_layout_step<W:Write>(shader:&Shader,vert_names:&HashMap<String,(usize,String)>,writer:&mut W) {

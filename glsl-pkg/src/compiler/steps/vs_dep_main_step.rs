@@ -1,8 +1,9 @@
 use std::{fmt::Write, sync::Arc};
 
 use glsl_lang::{ast::*, transpiler::glsl::show_function_definition, visitor::*};
+use glsl_pack_rtbase::shader::Shader;
 
-use crate::{shader::Shader, compiler::sym_generator::SymbolGenerator, pkg_inst::PackageInstance, ast::SymbolName};
+use crate::{compiler::sym_generator::SymbolGenerator, pkg_inst::PackageInstance, ast::SymbolName};
 
 use super::ReplaceReturnStmt;
 

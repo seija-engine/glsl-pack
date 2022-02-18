@@ -1,6 +1,8 @@
 use std::{sync::Arc, fmt::Write};
 
-use crate::{shader::Shader, pkg_inst::PackageInstance, ast::{RcSymbolName, SymbolName}};
+use glsl_pack_rtbase::shader::Shader;
+
+use crate::{ pkg_inst::PackageInstance, ast::{SymbolName}};
 
 use super::{steps::*, IShaderBackend};
 

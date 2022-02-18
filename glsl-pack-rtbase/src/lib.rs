@@ -1,6 +1,10 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash,Hasher};
 use base58::ToBase58;
+#[macro_use]
+extern crate serde_derive;
+pub mod shader;
+pub mod rt_shaders;
 
 #[derive(Debug,Default,Hash,PartialEq, Eq,Clone)]
 pub struct MacroGroup {
@@ -19,7 +23,6 @@ impl MacroGroup {
   }
 
   pub fn hash_base64(&self) -> String {
-    
     let mut hasher = DefaultHasher::default();
     self.names.hash(&mut hasher);
     let num = hasher.finish();
