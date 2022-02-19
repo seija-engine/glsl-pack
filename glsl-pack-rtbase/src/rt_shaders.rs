@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::Path};
 use crate::shader::Shader;
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Debug)]
 pub struct RTShaderInfo {
    pub backends:Vec<String>
 }
@@ -16,7 +16,7 @@ impl From<&Shader> for RTShaderInfo {
 
 #[derive(Default,Serialize,Deserialize)]
 pub struct RuntimeShaders {
-    shaders:HashMap<String,RTShaderInfo>
+    pub shaders:HashMap<String,RTShaderInfo>
 }
 
 impl RuntimeShaders {
@@ -32,7 +32,7 @@ impl RuntimeShaders {
         std::fs::write(path, serialized).unwrap();
     }
 
-    pub fn read_from(&self,path:&Path) -> Option<RuntimeShaders> {
+    pub fn read_from(path:&Path) -> Option<RuntimeShaders> {
         let json_string = std::fs::read_to_string(path).ok()?;
         serde_json::from_str(&json_string).ok()
     }
