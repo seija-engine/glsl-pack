@@ -62,11 +62,19 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,s
 
     let mut compiler = shaderc::Compiler::new().unwrap();
   
-    let vert_spv = compiler.compile_into_spirv(&vs_string,shaderc::ShaderKind::Vertex,&vs_file_name, "main", None).unwrap();
-    let frag_spv = compiler.compile_into_spirv(&fs_string,shaderc::ShaderKind::Fragment,&fs_file_name, "main", None).unwrap();
+    let rvert_spv = compiler.compile_into_spirv(&vs_string,shaderc::ShaderKind::Vertex,&vs_file_name, "main", None);
+    let rfrag_spv = compiler.compile_into_spirv(&fs_string,shaderc::ShaderKind::Fragment,&fs_file_name, "main", None);
+    if let Err(err) = rvert_spv {
+        log::error!("{} error:{:?}",&vs_file_name,&err);
+        return;
+    }
+    if let Err(err) = rfrag_spv {
+        log::error!("{} error:{:?}",&fs_file_name,&err);
+        return;
+    }
     
-    std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), &vert_spv.as_binary_u8()).unwrap();
-    std::fs::write(out_path.join(format!("{}.spv",&fs_file_name)), &frag_spv.as_binary_u8()).unwrap();
+    std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), &rvert_spv.unwrap().as_binary_u8()).unwrap();
+    std::fs::write(out_path.join(format!("{}.spv",&fs_file_name)), &rfrag_spv.unwrap().as_binary_u8()).unwrap();
 
     std::fs::write(out_path.join(&vs_file_name), vs_string).unwrap();
     std::fs::write(out_path.join(&fs_file_name), fs_string).unwrap();
