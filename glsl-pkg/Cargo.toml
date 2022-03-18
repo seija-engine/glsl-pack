@@ -16,3 +16,4 @@ text-macro = { path = "../text-macro" }
 lang-util = { path = "../glsl-lang/lang-util" }
 glsl-lang = { path = "../glsl-lang/lang" }
 glsl-pack-rtbase = {path = "../glsl-pack-rtbase" }
+shaderc = "0.7"

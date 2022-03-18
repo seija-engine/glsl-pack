@@ -53,12 +53,21 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,s
     let macro_hash = macros.hash_base64();
    
     let mut vs_string = String::default();
-    let mut fs_string:String = String::default();
+    let mut fs_string:String  = String::default();
     let mut shader_compiler = ShaderCompiler::new(shader.clone(),pkg_inst.clone());
     shader_compiler.compile(backend,&mut vs_string,&mut fs_string);
     let vs_file_name = format!("{}#{}_{}.vert",pkg_inst.info.name,shader.name,macro_hash); 
     let fs_file_name = format!("{}#{}_{}.frag",pkg_inst.info.name,shader.name,macro_hash);
-    std::fs::write(out_path.join(vs_file_name), vs_string).unwrap();
-    std::fs::write(out_path.join(fs_file_name), fs_string).unwrap();
     
+
+    let mut compiler = shaderc::Compiler::new().unwrap();
+  
+    let vert_spv = compiler.compile_into_spirv(&vs_string,shaderc::ShaderKind::Vertex,&vs_file_name, "main", None).unwrap();
+    let frag_spv = compiler.compile_into_spirv(&fs_string,shaderc::ShaderKind::Fragment,&fs_file_name, "main", None).unwrap();
+    
+    std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), &vert_spv.as_binary_u8()).unwrap();
+    std::fs::write(out_path.join(format!("{}.spv",&fs_file_name)), &frag_spv.as_binary_u8()).unwrap();
+
+    std::fs::write(out_path.join(&vs_file_name), vs_string).unwrap();
+    std::fs::write(out_path.join(&fs_file_name), fs_string).unwrap();
 }

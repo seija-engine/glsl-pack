@@ -13,7 +13,6 @@ pub fn run_vs_dep_main_step<W:Write>(_shader:&Shader,main_name:&str,inst:Arc<Pac
    sym_gen.run(&main_sym_name,writer,false);
    
    let mut find_ret_type:Option<SymbolName> = None;
-
    if let Some((decl,file)) = inst.ast_pkg.find_decl(&main_sym_name) {
       match &decl.content {
          ExternalDeclarationData::FunctionDefinition(fd) => {
@@ -29,6 +28,8 @@ pub fn run_vs_dep_main_step<W:Write>(_shader:&Shader,main_name:&str,inst:Arc<Pac
             log::error!("{:?} must be function",main_name);
          }
       }   
+   } else {
+      log::error!("not found main symbol:{:?}",&main_sym_name);
    }
    find_ret_type
 }
