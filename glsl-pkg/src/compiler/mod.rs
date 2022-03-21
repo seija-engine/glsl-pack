@@ -10,6 +10,8 @@ use std::{collections::HashMap, fmt::Write};
 pub use dep_search::DepSearch;
 pub use compile_env::CompileEnv;
 pub use compiler::{compile_shader};
+use glsl_pack_rtbase::shader::Shader;
+
 
 
 pub trait IShaderBackend {
@@ -17,7 +19,7 @@ pub trait IShaderBackend {
     fn write_fs_head<W:Write>(&self,_:&mut W) {}
     fn write_common_head<W:Write>(&self,_:&mut W) {}
     fn vertex_names(&self) -> &HashMap<String,(usize,String)>;
-    fn write_uniforms<W:Write>(&self,_:&mut W) {}
+    fn write_uniforms<W:Write>(&self,_:&mut W,_shader:&Shader) {}
 
-    fn trait_fns<W:Write>(&self) -> HashMap<String,fn(&mut W)> { HashMap::default() }
+    fn write_backend_trait<W:Write>(&self,write:&mut W,shader:&Shader,backends:&crate::backends::Backends) {}
 }

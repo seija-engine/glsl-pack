@@ -2,7 +2,7 @@ use std::{sync::Arc, fmt::Write};
 
 use glsl_pack_rtbase::shader::Shader;
 
-use crate::{ pkg_inst::PackageInstance, ast::{SymbolName}};
+use crate::{ pkg_inst::PackageInstance, ast::{SymbolName}, BACKENDS};
 
 use super::{steps::*, IShaderBackend};
 
@@ -25,16 +25,18 @@ impl ShaderCompiler {
         backend.write_common_head(writer);
         backend.write_vs_head(writer);
         run_vetex_layout_step(&self.shader,&backend.vertex_names(),writer);
-        backend.write_uniforms(writer);
-        run_shader_trait_step(&self.shader, &backend.trait_fns(), writer);
+        backend.write_uniforms(writer,&self.shader);
+       
+        
+        backend.write_backend_trait(writer, &self.shader,&BACKENDS);
         run_vs_dep_main_step(&self.shader, &self.shader.vs_main,self.pkg_inst.clone(), writer)
     }
 
     fn compile_fs<B:IShaderBackend,W:Write>(&mut self,backend:&B,writer:&mut W,in_type:Option<SymbolName>) {
         backend.write_common_head(writer);
         backend.write_fs_head(writer);
-        backend.write_uniforms(writer);
-        run_shader_trait_step(&self.shader, &backend.trait_fns(), writer);
+        backend.write_uniforms(writer,&self.shader);
+        backend.write_backend_trait(writer, &self.shader,&BACKENDS);
         run_fs_dep_main_step(&self.shader.fs_main,self.pkg_inst.clone(),writer,in_type);
     }
 }

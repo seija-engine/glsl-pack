@@ -1,0 +1,15 @@
+{
+    "Camera3D": {
+        "fns":[
+            {"name":"cameraView",     "type":"mat4"},
+            {"name":"cameraProj",     "type":"mat4"},
+            {"name":"cameraProjView", "type":"mat4"},
+            {"name":"cameraPosition", "type":"vec4"}
+        ]
+    },
+    "Transform": {
+        "fns":[
+            {"name":"transform",     "type":"mat4"}
+        ]
+    }
+}

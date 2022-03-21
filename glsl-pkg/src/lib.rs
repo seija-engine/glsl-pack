@@ -1,4 +1,4 @@
-use std::{path::Path, collections::hash_map::DefaultHasher, hash::{Hash, Hasher}};
+use std::{path::Path};
 
 use walkdir::DirEntry;
 mod ast;
@@ -8,10 +8,17 @@ mod errors;
 mod pkg_mgr;
 mod compiler;
 mod pkg_inst;
+pub mod backends;
 pub use pkg_mgr::{PackageManager};
 pub use glsl_pack_rtbase::{MacroGroup};
 pub use compiler::{CompileEnv,IShaderBackend};
 
+#[macro_use]
+extern crate lazy_static;
+
+lazy_static! {
+  pub static ref BACKENDS:backends::Backends = backends::Backends::new();
+}
 
 
 pub fn walk_glsl_folder<P:AsRef<Path>>(path:P) -> impl Iterator<Item = DirEntry> {
