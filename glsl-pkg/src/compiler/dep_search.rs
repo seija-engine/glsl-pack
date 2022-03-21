@@ -101,7 +101,7 @@ impl DepSearch {
                    if let Some(find_sym) = file.find_sym(var.as_str(), &pkg_inst.ast_pkg) {
                         self.add_search_sym(find_sym);
                    } else {
-                       log::error!("not found var:{:?}",var)
+                       log::warn!("not found var:{:?}",var)
                    }
                }
             },

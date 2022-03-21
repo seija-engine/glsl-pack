@@ -30,16 +30,16 @@ pub fn run_fs_dep_main_step<W:Write>(main_name:&str,inst:Arc<PackageInstance>,wr
     }
 }
 
-fn find_fst_param_name(fd:&FunctionDefinition) -> String {
+fn find_fst_param_name(fd:&FunctionDefinition) -> Option<String> {
     for param in fd.prototype.parameters.iter() {
         match &param.content {
             FunctionParameterDeclarationData::Named(_,named) => {
-               return named.ident.ident.0.to_string();
+               return Some(named.ident.ident.0.to_string());
             },
             _ => {}
         }
     }
-    "_input".to_string()
+    None
 }
 
 fn make_decl(from_name:&str,to_name:&str,type_name:&str) -> Statement {
@@ -79,13 +79,17 @@ fn re_generator_function(old_decl:&FunctionDefinition) -> FunctionDefinition {
       name:fn_id,
       parameters:vec![]
     };
-    let decl_stmt = make_decl("_input", param_name.as_str(), "VSOutput");
+    let decl_stmt = if let Some(param_name) = param_name {
+        Some(make_decl("_input", param_name.as_str(), "VSOutput"))
+    } else { None };
     
 
     let mut re_gen = ReplaceReturnStmt::default();
     re_gen.replace_name("_outColor");
     let mut new_stmt = re_gen.rum_compound_stmt(&old_decl.statement);
-    new_stmt.statement_list.insert(0, decl_stmt);
+    if let Some(decl_stmt) = decl_stmt {
+        new_stmt.statement_list.insert(0, decl_stmt);
+    }
     FunctionDefinitionData {
       prototype:new_fn_prototype.into(),
       statement:new_stmt
