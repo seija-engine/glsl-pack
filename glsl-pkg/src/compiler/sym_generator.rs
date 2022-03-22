@@ -5,7 +5,7 @@ use crate::{ast::{SymbolName, RcSymbolName}, pkg_inst::PackageInstance};
 
 use super::{ dag::{Graph, NodeId}, DepSearch};
 
-#[derive(Debug)]
+
 pub struct SymbolGenerator {
     inst:Arc<PackageInstance>,
     symbols:Vec<Vec<SymbolName>>,

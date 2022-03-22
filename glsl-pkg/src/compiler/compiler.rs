@@ -2,7 +2,7 @@ use std::{path::{PathBuf, Path}, fs, sync::Arc};
 
 use glsl_pack_rtbase::shader::Shader;
 
-use crate::{MacroGroup, CompileEnv, compiler::shader_compiler::ShaderCompiler, package::Package, pkg_inst::PackageInstance};
+use crate::{MacroGroup,compiler::shader_compiler::ShaderCompiler, package::Package, pkg_inst::PackageInstance};
 
 use super::{IShaderBackend, combinadics::start_combination};
 

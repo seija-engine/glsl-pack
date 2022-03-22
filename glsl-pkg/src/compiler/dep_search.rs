@@ -1,14 +1,16 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Weak};
 use glsl_lang::ast::*;
+use crate::BACKENDS;
 use crate::ast::{SymbolName, ASTFile, RcSymbolName};
+use crate::buildin_sym::BuildinSymbols;
 use crate::pkg_inst::PackageInstance;
 
-#[derive(Debug)]
 pub struct DepSearch {
     pub symbols:Vec<RcSymbolName>,
     pub sets:HashSet<RcSymbolName>,
     scopes:Vec<SymbolScope>,
+    buildin_syms:BuildinSymbols
 }
 
 #[derive(Default,Debug)]
@@ -28,7 +30,8 @@ impl SymbolScope {
 
 impl DepSearch {
     pub fn new() -> Self {
-        DepSearch {symbols:vec![], sets:HashSet::default(),scopes:Vec::new() }
+        
+        DepSearch {symbols:vec![], sets:HashSet::default(),scopes:Vec::new(),buildin_syms:BuildinSymbols::new(&BACKENDS) }
     }
 
     pub fn search(&mut self,sym:&SymbolName,pkg_inst:&PackageInstance) -> Vec<RcSymbolName> {
@@ -101,7 +104,9 @@ impl DepSearch {
                    if let Some(find_sym) = file.find_sym(var.as_str(), &pkg_inst.ast_pkg) {
                         self.add_search_sym(find_sym);
                    } else {
-                       log::warn!("not found var:{:?}",var)
+                       if !self.buildin_syms.has_symbol(var.as_str()) {
+                           log::warn!("not found var:{:?}",var)
+                       }
                    }
                }
             },
@@ -319,7 +324,11 @@ impl DepSearch {
                 Some(sym) => {
                     self.add_search_sym(sym);
                 },
-                None => log::error!("not found type:{:?} {:?}: position:{:?}",typ_name.0,file.path,typ.span)
+                None => {
+                    if !self.buildin_syms.has_type(typ_name.0.as_str()) {
+                        log::error!("not found type:{:?} {:?}: position:{:?}",typ_name.0,file.path,typ.span)
+                    }
+                } 
             }
         }
     }
