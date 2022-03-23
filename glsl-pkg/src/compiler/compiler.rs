@@ -50,7 +50,7 @@ pub fn compile_shader<'a,B:IShaderBackend>(package:&'a mut Package,shader_name:&
        
         run_macro(&out_path, pkg_inst.clone(), &find_shader, &group, backend,&all_verts);
     });
-    None
+    Some(find_shader.clone())
     
 }
 

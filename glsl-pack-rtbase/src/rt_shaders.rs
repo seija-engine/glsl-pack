@@ -3,12 +3,16 @@ use crate::shader::Shader;
 
 #[derive(Serialize,Deserialize,Debug)]
 pub struct RTShaderInfo {
-   pub backends:Vec<String>
+   pub backends:Vec<String>,
+   pub verts:HashMap<String,bool>
 }
 
 impl From<&Shader> for RTShaderInfo {
     fn from(shader: &Shader) -> Self {
-        RTShaderInfo { backends:shader.backend.clone() }
+        RTShaderInfo { 
+            backends:shader.backend.clone(),
+            verts:shader.vertexs.clone() 
+        }
     }
 }
 
