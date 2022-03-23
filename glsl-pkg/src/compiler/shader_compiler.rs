@@ -16,15 +16,15 @@ impl ShaderCompiler {
         ShaderCompiler { shader,pkg_inst }
     }
 
-    pub fn compile<B:IShaderBackend,W:Write>(&mut self,backend:&B,vs:&mut W,fs:&mut W) {
-       let ret_type = self.compile_vs(backend,vs);
+    pub fn compile<B:IShaderBackend,W:Write>(&mut self,backend:&B,vs:&mut W,fs:&mut W,verts:&Vec<String>) {
+       let ret_type = self.compile_vs(backend,vs,verts);
        self.compile_fs(backend, fs,ret_type);
     }
 
-    fn compile_vs<B:IShaderBackend,W:Write>(&mut self,backend:&B,writer:&mut W) -> Option<SymbolName>  {
+    fn compile_vs<B:IShaderBackend,W:Write>(&mut self,backend:&B,writer:&mut W,verts:&Vec<String>) -> Option<SymbolName>  {
         backend.write_common_head(writer);
         backend.write_vs_head(writer);
-        run_vetex_layout_step(&self.shader,&backend.vertex_names(),writer);
+        run_vetex_layout_step(&backend.vertex_names(),writer,verts);
         backend.write_uniforms(writer,&self.shader);
        
         
