@@ -33,13 +33,13 @@ impl PackageManager {
         self.out_path = path_buf;
     }
 
-    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:&Vec<String>,backend:&B) -> bool {
+    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:&Vec<String>,backend:&B,ex_data:&B::ExData) -> bool {
         if !self.out_path.exists() {
             fs::create_dir_all(&self.out_path).unwrap();
         }
         let out_path = self.out_path.clone();
         if let Some(package) = self.get_or_load_pkg(pkg_name) {
-         if let Some(shader) = compile_shader(package,shader_name,macros,out_path,backend) {
+         if let Some(shader) = compile_shader(package,shader_name,macros,out_path,backend,ex_data) {
             self.rt_shaders.add_shader(pkg_name, &shader);
             true
          } else {

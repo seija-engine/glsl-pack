@@ -13,11 +13,12 @@ use glsl_pack_rtbase::shader::Shader;
 
 
 pub trait IShaderBackend {
+    type ExData;
     fn write_vs_head<W:Write>(&self,_:&mut W) {}
     fn write_fs_head<W:Write>(&self,_:&mut W) {}
     fn write_common_head<W:Write>(&self,_:&mut W) {}
     fn vertex_names(&self) -> &HashMap<String,(usize,String)>;
-    fn write_uniforms<W:Write>(&self,_:&mut W,_shader:&Shader) {}
+    fn write_uniforms<W:Write>(&self,_:&mut W,_shader:&Shader,ex_data:&Self::ExData) {}
 
     fn write_backend_trait<W:Write>(&self,write:&mut W,shader:&Shader,backends:&crate::backends::Backends) {}
 }

@@ -13,7 +13,7 @@ impl BuildinSymbols {
         let arr = ["gl_Color","gl_SecondaryColor","gl_Normal","gl_Vertex","gl_MultiTexCoordn","gl_FogCoord",
                               "gl_Position","gl_ClipVertex","gl_PointSize","gl_FrontColor","gl_BackColor","gl_FrontSecondaryColor",
                               "gl_BackSecondaryColor","gl_TexCoord","gl_FogFragCoord","vert_position","vert_uv0",
-                              "vert_uv1","vert_normal","vert_tangent","vert_color"];
+                              "vert_uv1","vert_normal","vert_tangent","vert_color","material","texture"];
         syms.extend(arr.iter().map(|s| s.to_string()));
 
         let mut typs:HashSet<String> = HashSet::default();
@@ -42,6 +42,9 @@ impl BuildinSymbols {
     }
 
     pub fn has_symbol(&self,name:&str) -> bool {
+        if name.starts_with("tex_") || name.starts_with("slot_") {
+            return true;
+        }
         self.syms.contains(name)
     }
 }

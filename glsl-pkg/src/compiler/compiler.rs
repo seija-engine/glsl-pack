@@ -9,7 +9,12 @@ use super::{IShaderBackend, combinadics::start_combination};
 
 
 
-pub fn compile_shader<'a,B:IShaderBackend>(package:&'a mut Package,shader_name:&str,macros:&Vec<String>,out_path:PathBuf,backend:&B) -> Option<Arc<Shader>> {
+pub fn compile_shader<'a,B:IShaderBackend>(
+    package:&'a mut Package,
+    shader_name:&str,
+    macros:&Vec<String>,
+    out_path:PathBuf,
+    backend:&B,ex_data:&B::ExData) -> Option<Arc<Shader>> {
     let efind_shader = package.info.shaders.iter().find(|v| v.name == shader_name);
     if efind_shader.is_none() {
         log::error!("not found shader {} in package {}",shader_name,package.info.name);
@@ -48,19 +53,19 @@ pub fn compile_shader<'a,B:IShaderBackend>(package:&'a mut Package,shader_name:&
 
         all_verts.extend(require_verts.iter().map(|v| v.clone()));
        
-        run_macro(&out_path, pkg_inst.clone(), &find_shader, &group, backend,&all_verts);
+        run_macro(&out_path, pkg_inst.clone(), &find_shader, &group, backend,&all_verts,ex_data);
     });
     Some(find_shader.clone())
     
 }
 
-fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,shader:&Arc<Shader>,macros:&MacroGroup,backend:&B,verts:&Vec<String>) {
+fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,shader:&Arc<Shader>,macros:&MacroGroup,backend:&B,verts:&Vec<String>,ex_data:&B::ExData) {
     let macro_hash = macros.hash_base64();
    
     let mut vs_string = String::default();
     let mut fs_string:String  = String::default();
     let mut shader_compiler = ShaderCompiler::new(shader.clone(),pkg_inst.clone());
-    shader_compiler.compile(backend,&mut vs_string,&mut fs_string,verts);
+    shader_compiler.compile(backend,&mut vs_string,&mut fs_string,verts,ex_data);
     let vs_file_name = format!("{}#{}_{}.vert",pkg_inst.info.name,shader.name,macro_hash); 
     let fs_file_name = format!("{}#{}_{}.frag",pkg_inst.info.name,shader.name,macro_hash);
     
