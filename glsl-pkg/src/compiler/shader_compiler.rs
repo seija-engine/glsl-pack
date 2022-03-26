@@ -26,10 +26,12 @@ impl ShaderCompiler {
         backend.write_vs_head(writer);
         run_vetex_layout_step(&backend.vertex_names(),writer,verts);
         backend.write_uniforms(writer,&self.shader,ex_data);
-       
-        
         backend.write_backend_trait(writer, &self.shader,&BACKENDS);
-        run_vs_dep_main_step(&self.shader, &self.shader.vs_main,self.pkg_inst.clone(), writer)
+       
+        run_vs_dep_main_step(&self.shader, &self.shader.vs_main,self.pkg_inst.clone(), writer,|writer: &mut W| {
+            backend.write_vs_slots(writer, &self.shader, ex_data);
+        })
+
     }
 
     fn compile_fs<B:IShaderBackend,W:Write>(&mut self,backend:&B,writer:&mut W,in_type:Option<SymbolName>,ex_data:&B::ExData) {
@@ -37,7 +39,9 @@ impl ShaderCompiler {
         backend.write_fs_head(writer);
         backend.write_uniforms(writer,&self.shader,ex_data);
         backend.write_backend_trait(writer, &self.shader,&BACKENDS);
-        run_fs_dep_main_step(&self.shader.fs_main,self.pkg_inst.clone(),writer,in_type);
+        run_fs_dep_main_step(&self.shader.fs_main,self.pkg_inst.clone(),writer,in_type,|wirter| {
+            backend.write_fs_slots(wirter, &self.shader, ex_data);
+        });
     }
 }
 

@@ -3,11 +3,11 @@ use std::{fmt::Write, sync::Arc};
 use glsl_lang::{ast::*, transpiler::glsl::show_function_definition, visitor::*};
 use glsl_pack_rtbase::shader::Shader;
 
-use crate::{compiler::sym_generator::SymbolGenerator, pkg_inst::PackageInstance, ast::SymbolName};
+use crate::{compiler::sym_generator::SymbolGenerator, pkg_inst::PackageInstance, ast::SymbolName, IShaderBackend};
 
 use super::ReplaceReturnStmt;
 
-pub fn run_vs_dep_main_step<W:Write>(_shader:&Shader,main_name:&str,inst:Arc<PackageInstance>,writer:&mut W) -> Option<SymbolName> {
+pub fn run_vs_dep_main_step<F:FnOnce(&mut W),W:Write>(_shader:&Shader,main_name:&str,inst:Arc<PackageInstance>,writer:&mut W,f:F) -> Option<SymbolName> {
    let mut sym_gen = SymbolGenerator::new(inst.clone());
    let main_sym_name = SymbolName::parse(main_name);
    sym_gen.run(&main_sym_name,writer,false);
@@ -20,6 +20,7 @@ pub fn run_vs_dep_main_step<W:Write>(_shader:&Shader,main_name:&str,inst:Arc<Pac
                find_ret_type = file.find_sym(&old_ty_name.0, &inst.ast_pkg);
                writer.write_fmt(format_args!("\r\nlayout(location = 0) out {} _output;\r\n",old_ty_name.0)).unwrap();
             }
+            f(writer);
             let new_func = re_generator_function(fd);
             writer.write_str("\r\n").unwrap();
             show_function_definition(writer, &new_func, &mut sym_gen.fs).unwrap();

@@ -6,20 +6,20 @@ use crate::{pkg_inst::PackageInstance, compiler::sym_generator::SymbolGenerator,
 
 use super::ReplaceReturnStmt;
 
-pub fn run_fs_dep_main_step<W:Write>(main_name:&str,inst:Arc<PackageInstance>,writer:&mut W,sym:Option<SymbolName>) {
+pub fn run_fs_dep_main_step<F:FnOnce(&mut W),W:Write>(main_name:&str,inst:Arc<PackageInstance>,writer:&mut W,sym:Option<SymbolName>,f:F) {
     let mut sym_gen = SymbolGenerator::new(inst.clone());
     let main_sym_name = SymbolName::parse(main_name);
     sym_gen.run(&main_sym_name,writer,false);
 
-    if let Some(in_sym) = sym {
+    if let Some(in_sym) = sym.as_ref() {
         writer.write_str("\r\n").unwrap();
         writer.write_fmt(format_args!("layout(location = 0) in {} _input;\r\n",&in_sym.name)).unwrap();
     }
-
+    f(writer);
     if let Some((decl,_file)) = inst.ast_pkg.find_decl(&main_sym_name) {
         match &decl.content {
             ExternalDeclarationData::FunctionDefinition(fd) => {
-                let new_func = re_generator_function(fd);
+                let new_func = re_generator_function(fd,sym.as_ref());
                 writer.write_str("\r\n").unwrap();
                 show_function_definition(writer, &new_func, &mut sym_gen.fs).unwrap();
             },
@@ -64,7 +64,7 @@ fn make_decl(from_name:&str,to_name:&str,type_name:&str) -> Statement {
     StatementData::Declaration(decl.into()).into()
 }
 
-fn re_generator_function(old_decl:&FunctionDefinition) -> FunctionDefinition {
+fn re_generator_function(old_decl:&FunctionDefinition,in_type_sym:Option<&SymbolName>) -> FunctionDefinition {
     let param_name = find_fst_param_name(old_decl);
     let fn_id = Identifier::new(IdentifierData("main".into()), None);
     let full_ty =  FullySpecifiedTypeData {
@@ -80,7 +80,7 @@ fn re_generator_function(old_decl:&FunctionDefinition) -> FunctionDefinition {
       parameters:vec![]
     };
     let decl_stmt = if let Some(param_name) = param_name {
-        Some(make_decl("_input", param_name.as_str(), "VSOutput"))
+        Some(make_decl("_input", param_name.as_str(), &in_type_sym.unwrap().name))
     } else { None };
     
 
