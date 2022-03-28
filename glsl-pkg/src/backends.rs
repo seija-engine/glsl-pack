@@ -14,6 +14,8 @@ pub struct Backend {
 
 #[derive(Serialize,Deserialize,Debug)]
 pub struct  BackendItem {
+    #[serde(rename = "arrayName")]
+    pub array_name:Option<String>,
     pub name:String,
     #[serde(rename = "type")]
     pub typ:String

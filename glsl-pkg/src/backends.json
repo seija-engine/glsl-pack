@@ -14,7 +14,8 @@
     },
     "Light": {
         "fns":[
-            {"name":"lightCount",     "type":"int"}
+            {  "name":"lightCount",  "type":"int" },
+            {"arrayName":"lights",   "name":"position", "type":"int" }
         ]
     }
 }
