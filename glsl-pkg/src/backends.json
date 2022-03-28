@@ -11,5 +11,10 @@
         "fns":[
             {"name":"transform",     "type":"mat4"}
         ]
+    },
+    "Light": {
+        "fns":[
+            {"name":"lightCount",     "type":"int"}
+        ]
     }
 }
