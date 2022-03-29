@@ -30,8 +30,19 @@ impl BuildinSymbols {
                 if let Some(r) = new_name.get_mut(0..1) {
                     r.make_ascii_uppercase();
                 }
-               let fname = format!("get{}",new_name);
-               syms.insert(fname);
+
+                if let Some(arr_name) = item.array_name.as_ref() {
+                    let mut new_arr_name = arr_name.clone();
+                    if let Some(r) = new_arr_name.get_mut(0..1) {
+                        r.make_ascii_uppercase();
+                    }
+                    let fname = format!("get{}{}",new_arr_name,new_name);
+                    syms.insert(fname);
+                } else {
+                    let fname = format!("get{}",new_name);
+                    syms.insert(fname);
+                }
+              
             }
         }
         BuildinSymbols { syms,typs }
