@@ -14,7 +14,8 @@
     },
     "Light": {
         "fns":[
-            {  "name":"lightCount",  "type":"int" },
+            {"name":"ambileColor",  "type":"vec4" },
+            {"name":"lightCount",  "type":"int" },
             {"arrayName":"lights",   "name":"position", "type":"vec3" },
             {"arrayName":"lights",   "name":"type", "type":"int" }
         ]
