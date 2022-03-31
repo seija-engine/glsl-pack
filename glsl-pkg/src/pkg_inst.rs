@@ -19,7 +19,7 @@ impl PackageInstance {
             let p_str = name.canonicalize().unwrap().to_str().unwrap().to_string();
             let r_path = p_str.trim_start_matches(&full_path);
             if let Err(err) = inst.ast_pkg.load_file(inst.info.name.clone(),&r_path.replace('\\', "/").trim_start_matches('/'), f.to_string()) {
-               log::error!("{:?}",err);
+               dbg!(err);
             }
         }
         inst

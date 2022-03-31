@@ -21,9 +21,9 @@
             {"arrayName":"lights",   "name":"type",      "type":"int"   },
             {"arrayName":"lights",   "name":"direction", "type":"vec3"  },
             {"arrayName":"lights",   "name":"color",     "type":"vec3"  },
-            {"arrayName":"lights",   "name":"intensity", "type":"float" }
-            
-            
+            {"arrayName":"lights",   "name":"intensity", "type":"float" },
+            {"arrayName":"lights",   "name":"ex1", "type":"float" },
+            {"arrayName":"lights",   "name":"ex2", "type":"float" }
         ]
     }
 }
