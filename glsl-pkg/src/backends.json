@@ -7,6 +7,11 @@
             {"name":"cameraPosition", "type":"vec4"}
         ]
     },
+    "PBRCameraEx": {
+        "fns":[
+            {"name":"exposure",     "type":"float"}
+        ]
+    },
     "Transform": {
         "fns":[
             {"name":"transform",     "type":"mat4"}
@@ -25,6 +30,21 @@
             {"arrayName":"lights",   "name":"ex1", "type":"float" },
             {"arrayName":"lights",   "name":"ex2", "type":"float" },
             {"arrayName":"lights",   "name":"ex3", "type":"float" }
+        ]
+    },
+
+    "PBRLight": {
+       "fns":[
+            {"name":"lightCount",    "type":"int" },
+
+            {"arrayName":"lights",   "name":"position",  "type":"vec3"  },
+            {"arrayName":"lights",   "name":"type",      "type":"int"   },
+            {"arrayName":"lights",   "name":"direction", "type":"vec3"  },
+            {"arrayName":"lights",   "name":"color",     "type":"vec3"  },
+            {"arrayName":"lights",   "name":"intensity", "type":"float" },
+            {"arrayName":"lights", "name":"falloff",  "type":"float"  },
+            {"arrayName":"lights", "name":"spotScaleOffset",  "type":"vec2"}
+            
         ]
     }
 }
