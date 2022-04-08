@@ -35,6 +35,7 @@
 
     "PBRLight": {
        "fns":[
+            {"name":"ambileColor",  "type":"vec3" },
             {"name":"lightCount",    "type":"int" },
 
             {"arrayName":"lights",   "name":"position",  "type":"vec3"  },
