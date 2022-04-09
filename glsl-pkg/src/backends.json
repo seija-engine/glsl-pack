@@ -43,8 +43,9 @@
             {"arrayName":"lights",   "name":"direction", "type":"vec3"  },
             {"arrayName":"lights",   "name":"color",     "type":"vec3"  },
             {"arrayName":"lights",   "name":"intensity", "type":"float" },
-            {"arrayName":"lights", "name":"falloff",  "type":"float"  },
-            {"arrayName":"lights", "name":"spotScaleOffset",  "type":"vec2"}
+            {"arrayName":"lights",   "name":"falloff",     "type":"float"  },
+            {"arrayName":"lights",   "name":"spotScale",  "type":"float"},
+            {"arrayName":"lights",   "name":"spotOffset",  "type":"float"}
             
         ]
     }
