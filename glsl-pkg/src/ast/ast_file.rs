@@ -34,9 +34,10 @@ impl ASTFile {
         for use_pkg in uses.iter_mut() {
             use_pkg.trim_left(&pkg_info.name);
         }
+      
         let mut scan_define = ScanDefine::new(&remain)?;
         scan_define.scan();
-
+       
         let pkg_path:Vec<String> = path.trim_end_matches(".glsl").split('/').map(String::from).collect();
         Ok(ASTFile {
             pkg_path:Arc::new(pkg_path.into()),

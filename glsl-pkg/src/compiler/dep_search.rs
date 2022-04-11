@@ -197,7 +197,9 @@ impl DepSearch {
                     }
                 }
             },
-            StatementData::Jump(_) => {},
+            StatementData::Jump(jump) => {
+                self.search_jump_stmt(jump,file,pkg_inst);
+            },
             StatementData::Compound(v) => {
                 self.enter_scope();
                 for stmt in v.statement_list.iter() {
@@ -205,6 +207,17 @@ impl DepSearch {
                 }
                 self.exit_scope();
             }
+        }
+    }
+
+    fn search_jump_stmt(&mut self,stmt:&JumpStatement,file:&ASTFile,pkg_inst:&PackageInstance) {
+        match &stmt.content {
+            JumpStatementData::Return(expr) => {
+                if let Some(re) = expr {
+                    self.search_expr(re, file, pkg_inst);
+                }
+            },
+            _ => {}
         }
     }
 
