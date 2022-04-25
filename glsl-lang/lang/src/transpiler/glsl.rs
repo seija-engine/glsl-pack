@@ -1017,16 +1017,16 @@ where
         }
         ast::ExprData::Bracket(ref e, ref a) => {
             // Note: bracket is left-to-right associative
-
-            if e.precedence() <= expr.precedence() {
+            //if e.precedence() <= expr.precedence() {
+            //    show_expr(f, &e, state)?;
+            //} else {
                 show_expr(f, &e, state)?;
-            } else {
-                f.write_str("(")?;
-                show_expr(f, &e, state)?;
-                f.write_str(")")?;
-            }
+                f.write_str("[")?;
+                show_expr(f, &a, state)?;
+                f.write_str("]")
+           //}
 
-            show_expr(f, &a, state)
+            //show_expr(f, &a, state)
         }
         ast::ExprData::FunCall(ref fun, ref args) => {
             show_function_identifier(f, &fun, state)?;

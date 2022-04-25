@@ -48,5 +48,10 @@
             {"arrayName":"lights",   "name":"spotOffset",  "type":"float"}
             
         ]
+    },
+    "SkinUniform": {
+        "fns":[
+            {"name":"jointMats", "type":"mat4[256]"}
+        ]
     }
 }
