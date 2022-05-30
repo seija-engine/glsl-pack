@@ -53,5 +53,10 @@
         "fns":[
             {"name":"jointMats", "type":"mat4[256]"}
         ]
+    },
+    "ShadowMap": {
+        "fns":[
+            {"name":"lightProjView", "type":"mat4"}
+        ]
     }
 }
