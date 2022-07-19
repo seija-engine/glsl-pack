@@ -51,6 +51,9 @@ impl PackageManager {
         }
     }
     pub fn write_rtinfos(&self) {
+        if !self.out_path.exists() {
+            fs::create_dir_all(&self.out_path).unwrap();
+        }
         let path = self.out_path.join("rt.json");
         self.rt_shaders.write_to(&path);
     } 
