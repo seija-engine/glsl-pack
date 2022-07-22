@@ -54,9 +54,16 @@
             {"name":"jointMats", "type":"mat4[256]"}
         ]
     },
-    "ShadowMap": {
+    "ShadowCast": {
         "fns":[
-            {"name":"lightProjView", "type":"mat4"}
+            {"name":"projView", "type":"mat4"}
+        ]
+    },
+    "ShadowRecv": {
+        "fns":[
+            {"name":"bias",     "type":"float"},
+            {"name":"strength", "type":"float"},
+            {"name":"shadowMap", "type":"texture2D"}
         ]
     }
 }
