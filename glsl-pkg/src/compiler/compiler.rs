@@ -1,6 +1,7 @@
 use std::{path::{PathBuf, Path}, fs, sync::Arc};
 
 use glsl_pack_rtbase::shader::Shader;
+use smol_str::SmolStr;
 
 use crate::{MacroGroup,compiler::shader_compiler::ShaderCompiler, package::Package, pkg_inst::PackageInstance};
 
@@ -22,8 +23,8 @@ pub fn compile_shader<'a,B:IShaderBackend>(
     let find_shader = efind_shader?.clone();
     let mut requires:Vec<String> = vec![];
     let mut options:Vec<String> = vec![];
-    let mut require_verts:Vec<String> = vec![];
-    let mut options_verts:Vec<String> = vec![];
+    let mut require_verts:Vec<SmolStr> = vec![];
+    let mut options_verts:Vec<SmolStr> = vec![];
 
     for (v_string,is_require) in find_shader.vertexs.iter() {
         let mut nv = "VERTEX_".to_string();
@@ -39,7 +40,7 @@ pub fn compile_shader<'a,B:IShaderBackend>(
     
     start_combination(options.len(), |idxs| {
         let mut all_macros:Vec<String> = vec![];
-        let mut all_verts:Vec<String> = vec![];
+        let mut all_verts:Vec<SmolStr> = vec![];
         for (idx,is_use) in idxs.iter() {
             if *is_use {  
                 all_macros.push(options[*idx].clone());
@@ -59,7 +60,7 @@ pub fn compile_shader<'a,B:IShaderBackend>(
     
 }
 
-fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,shader:&Arc<Shader>,macros:&MacroGroup,backend:&B,verts:&Vec<String>,ex_data:&B::ExData) {
+fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,shader:&Arc<Shader>,macros:&MacroGroup,backend:&B,verts:&Vec<SmolStr>,ex_data:&B::ExData) {
     let macro_hash = macros.hash_base64();
    
     let mut vs_string = String::default();

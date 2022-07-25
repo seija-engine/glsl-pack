@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-
+use smol_str::{SmolStr};
 use glsl_pack_rtbase::shader::Shader;
 use serde_json::Value;
 use anyhow::{Result};
@@ -15,15 +15,15 @@ pub fn read_shader_from_json(value:&Value) -> Result<Shader> {
     for (k,v) in json_verts {
         let v_str = v.as_str().unwrap_or_default();
         if v_str == "require" {
-            vertexs.insert(k.to_string(), true);
+            vertexs.insert(k.into(), true);
         } else {
-            vertexs.insert(k.to_string(), false);
+            vertexs.insert(k.into(), false);
         }
     }
 
-    let mut backend:Vec<String> = vec![];
+    let mut backend:Vec<SmolStr> = vec![];
     if let Some(vec_arr) = value.get("backend").and_then(Value::as_array) {
-        backend = vec_arr.iter().filter_map(|b| b.as_str()).map(String::from).collect();
+        backend = vec_arr.iter().filter_map(|b| b.as_str()).map(SmolStr::new).collect();
     }
 
     let mut slots:Vec<String> = vec![];
@@ -33,9 +33,10 @@ pub fn read_shader_from_json(value:&Value) -> Result<Shader> {
     let vs_main = value.get("vs").and_then(Value::as_str).ok_or(ShaderLoadError::JsonError("vs"))?.to_owned();
     let fs_main = value.get("fs").and_then(Value::as_str).ok_or(ShaderLoadError::JsonError("fs"))?.to_owned();
     Ok(Shader {
-        name:name.to_string(),
+        name:name.into(),
         vertexs,
         backend,
+        features:HashMap::default(),
         slots,
         vs_main,
         fs_main

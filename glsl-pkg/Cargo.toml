@@ -16,6 +16,7 @@ text-macro = { path = "../text-macro" }
 lang-util = { path = "../glsl-lang/lang-util" }
 glsl-lang = { path = "../glsl-lang/lang" }
 glsl-pack-rtbase = {path = "../glsl-pack-rtbase" }
+smol_str = "*"
 shaderc = "0.7"
 serde = "1.0.136"
 serde_derive = "1.0.136"
