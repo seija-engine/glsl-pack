@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryFrom};
 use smol_str::{SmolStr};
-use glsl_pack_rtbase::shader::Shader;
+use glsl_pack_rtbase::shader::{Shader, FeatureItem};
 use serde_json::Value;
 use anyhow::{Result};
 
@@ -32,11 +32,21 @@ pub fn read_shader_from_json(value:&Value) -> Result<Shader> {
     }
     let vs_main = value.get("vs").and_then(Value::as_str).ok_or(ShaderLoadError::JsonError("vs"))?.to_owned();
     let fs_main = value.get("fs").and_then(Value::as_str).ok_or(ShaderLoadError::JsonError("fs"))?.to_owned();
+
+    let mut features_map:HashMap<SmolStr,FeatureItem> = HashMap::default();
+
+    if let Some(features) = value.get("features").and_then(Value::as_object) {
+        for (name,item_object) in features.iter() {
+            let feature_name = SmolStr::new(name.as_str());
+            let feature_item =  FeatureItem::try_from(item_object).map_err(|_| ShaderLoadError::JsonError("features"))?;
+            features_map.insert(feature_name, feature_item);
+        }
+    }
     Ok(Shader {
         name:name.into(),
         vertexs,
         backend,
-        features:HashMap::default(),
+        features:features_map,
         slots,
         vs_main,
         fs_main

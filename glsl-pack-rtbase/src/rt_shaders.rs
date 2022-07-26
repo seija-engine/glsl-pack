@@ -1,11 +1,12 @@
 use std::{collections::HashMap, path::Path};
-use crate::shader::Shader;
+use crate::shader::{Shader, FeatureItem};
 use smol_str::{SmolStr};
 
 #[derive(Serialize,Deserialize,Debug)]
 pub struct RTShaderInfo {
    pub backends:Vec<SmolStr>,
-   pub verts:HashMap<SmolStr,bool>
+   pub verts:HashMap<SmolStr,bool>,
+   pub features:HashMap<SmolStr,FeatureItem>,
 }
 
 impl From<&Shader> for RTShaderInfo {
@@ -13,7 +14,8 @@ impl From<&Shader> for RTShaderInfo {
         
         RTShaderInfo { 
             backends:shader.backend.clone(),
-            verts:shader.vertexs.clone() 
+            verts:shader.vertexs.clone(),
+            features:shader.features.clone()
         }
     }
 }

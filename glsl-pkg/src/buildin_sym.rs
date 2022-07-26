@@ -14,7 +14,8 @@ impl BuildinSymbols {
                               "gl_Position","gl_ClipVertex","gl_PointSize","gl_FrontColor","gl_BackColor","gl_FrontSecondaryColor",
                               "gl_BackSecondaryColor","gl_TexCoord","gl_FogFragCoord","vert_position","vert_uv0",
                               "vert_uv1","vert_normal","vert_tangent","vert_color","material","texture","clamp","dot","normalize",
-                              "pow","max","reflect","transpose","inverse","distance","cross","sqrt","vert_weights","vert_joints"];
+                              "pow","max","reflect","transpose","inverse","distance","cross","sqrt","vert_weights","vert_joints","gl_FragDepth",
+                              "gl_FragCoord"];
         syms.extend(arr.iter().map(|s| s.to_string()));
 
         let mut typs:HashSet<String> = HashSet::default();
