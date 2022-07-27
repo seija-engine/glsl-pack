@@ -1,8 +1,9 @@
 use std::{path::{PathBuf}, str::FromStr, collections::HashMap, fs};
-use crate::{compiler::compile_shader, IShaderBackend, backends::Backends};
-use glsl_pack_rtbase::{MacroGroup, rt_shaders::RuntimeShaders};
+use crate::{compiler::compile_shader, IShaderBackend};
+use glsl_pack_rtbase::{rt_shaders::RuntimeShaders};
+use smol_str::SmolStr;
 
-use crate::{package::Package, compiler};
+use crate::{package::Package};
 
 
 
@@ -10,7 +11,7 @@ pub struct PackageManager {
     pkgs:HashMap<String,Package>,
     folders:Vec<PathBuf>,
     out_path:PathBuf,
-    rt_shaders:RuntimeShaders
+    pub rt_shaders:RuntimeShaders
 }
 
 impl PackageManager {
@@ -33,7 +34,7 @@ impl PackageManager {
         self.out_path = path_buf;
     }
 
-    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:&Vec<String>,backend:&B,ex_data:&B::ExData) -> bool {
+    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:&Vec<SmolStr>,backend:&B,ex_data:&B::ExData) -> bool {
         if !self.out_path.exists() {
             fs::create_dir_all(&self.out_path).unwrap();
         }
@@ -56,9 +57,10 @@ impl PackageManager {
         }
         let path = self.out_path.join("rt.json");
         self.rt_shaders.write_to(&path);
-    } 
+    }
 
-    fn get_or_load_pkg(&mut self,pkg_name:&str) -> Option<&mut Package> {
+
+    pub fn get_or_load_pkg(&mut self,pkg_name:&str) -> Option<&mut Package> {
         if self.pkgs.contains_key(pkg_name) {
             return self.pkgs.get_mut(pkg_name)            
         }

@@ -13,7 +13,7 @@ use super::{IShaderBackend, combinadics::start_combination};
 pub fn compile_shader<'a,B:IShaderBackend>(
     package:&'a mut Package,
     shader_name:&str,
-    macros:&Vec<String>,
+    macros:&Vec<SmolStr>,
     out_path:PathBuf,
     backend:&B,ex_data:&B::ExData) -> Option<Arc<Shader>> {
     let efind_shader = package.info.shaders.iter().find(|v| v.name == shader_name);
@@ -21,14 +21,14 @@ pub fn compile_shader<'a,B:IShaderBackend>(
         log::error!("not found shader {} in package {}",shader_name,package.info.name);
     }
     let find_shader = efind_shader?.clone();
-    let mut requires:Vec<String> = vec![];
-    let mut options:Vec<String> = vec![];
+    let mut requires:Vec<SmolStr> = vec![];
+    let mut options:Vec<SmolStr> = vec![];
     let mut require_verts:Vec<SmolStr> = vec![];
     let mut options_verts:Vec<SmolStr> = vec![];
 
     for (v_string,is_require) in find_shader.vertexs.iter() {
-        let mut nv = "VERTEX_".to_string();
-        nv.push_str(v_string.as_str());
+        let mut nv:SmolStr = format!("VERTEX_{}",v_string.as_str()).into();
+        
         if *is_require {
             require_verts.push(v_string.clone());
             requires.push(nv);
@@ -39,7 +39,7 @@ pub fn compile_shader<'a,B:IShaderBackend>(
     }
     
     start_combination(options.len(), |idxs| {
-        let mut all_macros:Vec<String> = vec![];
+        let mut all_macros:Vec<SmolStr> = vec![];
         let mut all_verts:Vec<SmolStr> = vec![];
         for (idx,is_use) in idxs.iter() {
             if *is_use {  

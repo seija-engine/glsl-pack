@@ -20,6 +20,32 @@ impl From<&Shader> for RTShaderInfo {
     }
 }
 
+pub fn get_features_macro_list(features:&HashMap<SmolStr,FeatureItem>,names:&Vec<SmolStr>) -> Vec<SmolStr> {
+    let mut macros:Vec<SmolStr> = vec![];
+    for feature_name in names.iter() {
+        if let Some(feature_item) = features.get(feature_name) {
+            macros.extend(feature_item.macros.clone());
+        }
+    }
+    macros
+}
+
+pub fn get_features_backend_list(features:&HashMap<SmolStr,FeatureItem>,names:&Vec<SmolStr>) -> Vec<SmolStr> {
+    let mut backends:Vec<SmolStr> = vec![];
+    for feature_name in names.iter() {
+        if let Some(feature_item) = features.get(feature_name) {
+            backends.extend(feature_item.backends.clone());
+        }
+    }
+    backends
+}
+
+impl RTShaderInfo {
+    pub fn get_macros(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_macro_list(&self.features,names) }
+
+    pub fn get_backends(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_macro_list(&self.features,names) }
+}
+
 
 
 #[derive(Default,Serialize,Deserialize)]

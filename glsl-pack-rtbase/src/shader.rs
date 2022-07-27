@@ -1,6 +1,8 @@
 use std::{collections::{HashMap}, convert::TryFrom};
 use serde_json::Value;
 use smol_str::{SmolStr};
+
+use crate::rt_shaders::{get_features_macro_list, get_features_backend_list};
 #[derive(Debug)]
 pub struct Shader {
     pub name:SmolStr,
@@ -16,6 +18,13 @@ pub struct FeatureItem {
    pub macros:Vec<SmolStr>,
    pub backends:Vec<SmolStr>
 }
+
+impl Shader {
+    pub fn get_macros(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_macro_list(&self.features,names) }
+
+    pub fn get_backends(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_backend_list(&self.features,names) }
+}
+
 
 impl TryFrom<&Value> for FeatureItem {
     type Error = ();

@@ -5,6 +5,7 @@ use std::{path::Path};
 use anyhow::Result;
 use anyhow::{bail};
 use serde_json::Value;
+use smol_str::SmolStr;
 use crate::MacroGroup;
 use crate::errors::PackageLoadError;
 use crate::pkg_inst::PackageInstance;
@@ -39,7 +40,8 @@ impl Package {
 pub struct PackageInfo {
     pub path:PathBuf,
     pub name:String,
-    pub shaders:Vec<Arc<Shader>>
+    pub shaders:Vec<Arc<Shader>>,
+    shader_keymap:HashMap<SmolStr,usize>,
 }
 
 impl PackageInfo {
@@ -54,15 +56,25 @@ impl PackageInfo {
 
         let pkg_name = json.get("name").and_then(Value::as_str).ok_or(PackageLoadError::JsonError("name"))?;
         let json_shaders = json.get("shaders").and_then(Value::as_array).ok_or(PackageLoadError::JsonError("shaders"))?;
+        
         let mut shaders:Vec<Arc<Shader>> = vec![];
+        let mut shader_keymap:HashMap<SmolStr,usize> = HashMap::default();
         for v in json_shaders {
-            shaders.push(Arc::new(read_shader_from_json(v)?));
+            let shader = read_shader_from_json(v)?;
+            let shader_name = shader.name.clone();
+            shaders.push(Arc::new(shader));
+            shader_keymap.insert(shader_name, shaders.len() - 1);
         }
         Ok(PackageInfo {
             path:path.as_ref().to_path_buf(),
             name:pkg_name.to_string(),
-            shaders
+            shaders,
+            shader_keymap
         })
+    }
+
+    pub fn find_shader(&self,name:&str) -> Option<&Arc<Shader>> {
+        self.shader_keymap.get(name).and_then(|index| self.shaders.get(*index))
     }
 }
 
