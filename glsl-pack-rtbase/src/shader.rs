@@ -20,9 +20,13 @@ pub struct FeatureItem {
 }
 
 impl Shader {
-    pub fn get_macros(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_macro_list(&self.features,names) }
+    pub fn get_macros(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> {  get_features_macro_list(&self.features,names) }
 
-    pub fn get_backends(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_backend_list(&self.features,names) }
+    pub fn get_backends(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { 
+         let mut lst = get_features_backend_list(&self.features,names);
+         lst.extend(self.backend.clone());
+         lst
+    }
 }
 
 

@@ -43,7 +43,11 @@ pub fn get_features_backend_list(features:&HashMap<SmolStr,FeatureItem>,names:&V
 impl RTShaderInfo {
     pub fn get_macros(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_macro_list(&self.features,names) }
 
-    pub fn get_backends(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { get_features_macro_list(&self.features,names) }
+    pub fn get_backends(&self,names:&Vec<SmolStr>) -> Vec<SmolStr> { 
+       let mut feature_backends = get_features_backend_list(&self.features,names);
+       feature_backends.extend(self.backends.clone());
+       feature_backends
+    }
 }
 
 
