@@ -441,7 +441,7 @@ pub enum Token<'i> {
     #[lang_util(kind = "vulkan type name")]
     UTexture1DArray,
     #[token("texture2D")]
-    #[lang_util(kind = "vulkan type name")]
+    #[lang_util(kind = "type name", kind = "vulkan type name")]
     Texture2D,
     #[token("texture2DArray")]
     #[lang_util(kind = "vulkan type name")]
@@ -522,7 +522,7 @@ pub enum Token<'i> {
     #[lang_util(kind = "vulkan type name")]
     UTextureBuffer,
     #[token("sampler")]
-    #[lang_util(kind = "vulkan type name")]
+    #[lang_util(kind = "type name",kind = "vulkan type name")]
     Sampler,
     #[token("samplerShadow")]
     #[lang_util(kind = "vulkan type name")]

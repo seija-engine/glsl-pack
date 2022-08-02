@@ -258,7 +258,14 @@ pub enum TypeSpecifierNonArrayData {
     /// `dmat4x4` type specifier
     #[lang_util(display(extra = "dmat4x4"))]
     DMat44,
+    
     // floating point opaque types
+    /// `texture2D` type specifier
+    #[lang_util(display(extra = "texture2D"))]
+    Texture2D,
+    /// `sampler` type specifier
+    #[lang_util(display(extra = "sampler"))]
+    Sampler,
     /// `sampler1D` type specifier
     #[lang_util(display(extra = "sampler1D"))]
     Sampler1D,

@@ -155,6 +155,12 @@ fn tokenize_type_name(tn: &ast::TypeName) -> TokenStream {
 fn tokenize_type_specifier_non_array(t: &ast::TypeSpecifierNonArray) -> TokenStream {
     let span = tokenize_span(&t.span);
     let t = match **t {
+        ast::TypeSpecifierNonArrayData::Texture2D => {
+            quote! { glsl_lang::ast::TypeSpecifierNonArrayData::Texture2D }
+        }
+        ast::TypeSpecifierNonArrayData::Sampler => {
+            quote! { glsl_lang::ast::TypeSpecifierNonArrayData::Sampler }
+        },
         ast::TypeSpecifierNonArrayData::Void => {
             quote! { glsl_lang::ast::TypeSpecifierNonArrayData::Void }
         }

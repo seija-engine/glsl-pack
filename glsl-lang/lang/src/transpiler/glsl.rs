@@ -515,6 +515,8 @@ where
         ast::TypeSpecifierNonArrayData::SamplerCubeArrayShadow => {
             f.write_str("samplerCubeArrayShadow")
         }
+        ast::TypeSpecifierNonArrayData::Texture2D => f.write_str("texture2D"),
+        ast::TypeSpecifierNonArrayData::Sampler => f.write_str("sampler"),
         ast::TypeSpecifierNonArrayData::ISampler1D => f.write_str("isampler1D"),
         ast::TypeSpecifierNonArrayData::IImage1D => f.write_str("iimage1D"),
         ast::TypeSpecifierNonArrayData::ISampler2D => f.write_str("isampler2D"),

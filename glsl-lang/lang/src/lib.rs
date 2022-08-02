@@ -49,7 +49,7 @@
 //!
 //! - [The OpenGL Shading Language Version 4.60](https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.pdf)
 
-#![deny(missing_docs)]
+//#![deny(missing_docs)]
 
 use lalrpop_util::lalrpop_mod;
 

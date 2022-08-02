@@ -13,6 +13,7 @@ impl ScanDefine {
     pub fn new(code:&str) -> Result<ScanDefine> {
         let mut opts = ParseContext::default();
         opts.opts.skip_type_check = true;
+        opts.opts.target_vulkan = true;
         
         let (unit,_) = TranslationUnit::parse_with_options(code, &opts)?;
         Ok(ScanDefine { unit:Some(unit),defines:HashMap::default() })
