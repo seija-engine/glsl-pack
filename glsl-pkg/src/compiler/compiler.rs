@@ -27,7 +27,7 @@ pub fn compile_shader<'a,B:IShaderBackend>(
     let mut options_verts:Vec<SmolStr> = vec![];
 
     for (v_string,is_require) in find_shader.vertexs.iter() {
-        let mut nv:SmolStr = format!("VERTEX_{}",v_string.as_str()).into();
+        let nv:SmolStr = format!("VERTEX_{}",v_string.as_str()).into();
         
         if *is_require {
             require_verts.push(v_string.clone());

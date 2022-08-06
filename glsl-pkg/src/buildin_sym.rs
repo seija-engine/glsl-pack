@@ -15,7 +15,7 @@ impl BuildinSymbols {
                               "gl_BackSecondaryColor","gl_TexCoord","gl_FogFragCoord","vert_position","vert_uv0",
                               "vert_uv1","vert_normal","vert_tangent","vert_color","material","texture","clamp","dot","normalize",
                               "pow","max","reflect","transpose","inverse","distance","cross","sqrt","vert_weights","vert_joints","gl_FragDepth",
-                              "gl_FragCoord"];
+                              "gl_FragCoord","textureSize","min","abs"];
         syms.extend(arr.iter().map(|s| s.to_string()));
 
         let mut typs:HashSet<String> = HashSet::default();
@@ -55,7 +55,7 @@ impl BuildinSymbols {
     }
 
     pub fn has_symbol(&self,name:&str) -> bool {
-        if name.starts_with("tex_") || name.starts_with("slot_") {
+        if name.starts_with("tex_") || name.starts_with("slot_") || name.starts_with("textureSize_") || name.starts_with("texture_") {
             return true;
         }
         self.syms.contains(name)
