@@ -1,4 +1,4 @@
-use std::{collections::{HashSet, HashMap, hash_map::DefaultHasher}, hash::{Hash, Hasher}};
+use std::{collections::{HashSet, HashMap}, hash::{Hash}};
 
 #[derive(Debug)]
 pub struct Graph<T:Hash + Clone + Eq> {
@@ -77,6 +77,7 @@ impl<T> Graph<T> where T:Hash + Clone + Eq {
 pub struct NodeId(pub usize);
 
 #[derive(Clone, Copy,Debug)]
+#[allow(dead_code)]
 pub struct Link {
     form:NodeId,
     to:NodeId
@@ -116,5 +117,5 @@ fn test_graph() {
     graph.add_link(node_4, node_5);
 
     let ids =  graph.sort();
-    dbg!(ids);
+    dbg!(ids.unwrap());
 }

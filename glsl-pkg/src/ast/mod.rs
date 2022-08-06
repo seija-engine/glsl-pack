@@ -4,7 +4,7 @@ mod scan_use;
 mod scan_define;
 mod lex_string;
 mod errors;
-use std::{collections::hash_map::DefaultHasher, hash::{Hash, Hasher}, sync::Arc};
+use std::{ hash::{Hash}, sync::Arc};
 
 pub use ast_file::ASTFile;
 pub use ast_package::ASTPackage;

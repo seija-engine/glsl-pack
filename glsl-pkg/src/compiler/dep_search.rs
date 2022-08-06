@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::sync::{Arc, Weak};
 use glsl_lang::ast::*;
 use crate::BACKENDS;
 use crate::ast::{SymbolName, ASTFile, RcSymbolName};
@@ -64,7 +63,7 @@ impl DepSearch {
         match &decl.content {
             DeclarationData::InitDeclaratorList(init_decl) => self.search_init_decl(init_decl,file,pkg_inst),
             DeclarationData::FunctionPrototype(fn_decl) => self.search_fn_prototype(fn_decl,file,pkg_inst),
-            DeclarationData::Block(block) => {},
+            DeclarationData::Block(_block) => {},
             DeclarationData::Precision(_, _) => {},
         }
     }

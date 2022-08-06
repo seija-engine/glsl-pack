@@ -1,4 +1,4 @@
-use std::{path::{PathBuf, Path}, fs, sync::{Arc, RwLock}, collections::{hash_map::DefaultHasher, HashSet}, hash::{Hash, Hasher}};
+use std::{path::{PathBuf}, sync::{Arc}, collections::{hash_map::DefaultHasher, HashSet}, hash::{Hash, Hasher}};
 
 use glsl_pack_rtbase::shader::Shader;
 use shaderc::Compiler;

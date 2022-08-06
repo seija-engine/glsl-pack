@@ -1,9 +1,10 @@
 use core::str::{Chars};
-use std::{collections::{VecDeque}, process::id};
+use std::{collections::{VecDeque}};
 
 static BACK_LEN:usize = 3usize;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct LexString<'a> {
     source:&'a str,
     pub chars:Chars<'a>,
@@ -16,7 +17,7 @@ pub struct LexString<'a> {
     line:u64,
     col:u64
 }
-
+#[allow(dead_code)]
 impl<'a> LexString<'a> {
     pub fn new(str:&'a str) -> Self {
         LexString {
@@ -203,15 +204,4 @@ impl<'a> LexString<'a> {
        }
        return &self.source[u8idx_s..u8idx_e];
     }
-}
-
-
-#[test]
-fn test_string() {
-   let mut lex = LexString::new("  1234∀56");
-   let aaaa = "∀5";
-  
-   let aa = lex.take_while(|chr| chr.is_whitespace());
-   dbg!(aa.map(|c| c.len()));
-   dbg!(lex.next());
 }

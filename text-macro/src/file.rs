@@ -175,7 +175,7 @@ impl<'a> MacroFileParser<'a> {
         match macro_name {
             Some("define") => self.parse_define(),
             Some("ifdef") => self.parse_if(),
-            s => {
+            _ => {
                 let mut err_macro = self.take_count(10);
                 err_macro.insert(0, '#');
                 Err(ParseError::ErrMacro(err_macro))

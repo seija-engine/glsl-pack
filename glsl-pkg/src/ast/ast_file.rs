@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 use std::sync::Arc;
 use anyhow::Result;
 use glsl_lang::ast::ExternalDeclaration;
 use crate::ast::ASTPackage;
-use crate::package::{PackageInfo, Package};
+use crate::package::{PackageInfo};
 
 use super::ast_package::PkgPath;
 use super::{ SymbolName};
@@ -71,6 +71,10 @@ impl ASTFile {
             }
         }
         None
+    }
+
+    pub fn package_info(&self) -> Arc<PackageInfo> {
+        self.pkg_info.clone()
     }
     /* 
     pub fn find_sym<'a,'b:'a>(&'a self,sym_name:&str,pkg:&'b ASTPackage) -> Option<&ExternalDeclaration> {

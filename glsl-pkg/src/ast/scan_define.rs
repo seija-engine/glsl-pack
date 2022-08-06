@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use anyhow::{Result};
-use glsl_lang::ast::{TranslationUnit, ExternalDeclaration, ExternalDeclarationData, Node, Declaration, DeclarationData, InitDeclaratorList, TypeSpecifierNonArray, TypeSpecifierNonArrayData};
-use glsl_lang::parse::{Parsable, ParseContext, ParseContextData};
+use glsl_lang::ast::{TranslationUnit, ExternalDeclaration, ExternalDeclarationData, DeclarationData, TypeSpecifierNonArrayData};
+use glsl_lang::parse::{Parsable, ParseContext};
 
 pub struct ScanDefine {
     unit:Option<TranslationUnit>,

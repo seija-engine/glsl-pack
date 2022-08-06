@@ -8,7 +8,7 @@ use super::{ dag::{Graph, NodeId}, DepSearch};
 
 pub struct SymbolGenerator {
     inst:Arc<PackageInstance>,
-    symbols:Vec<Vec<SymbolName>>,
+    //symbols:Vec<Vec<SymbolName>>,
     pub fs:FormattingState<'static>,
     graph:Graph<RcSymbolName>, 
     dep_search:DepSearch
@@ -18,7 +18,7 @@ impl SymbolGenerator {
     pub fn new(inst:Arc<PackageInstance>) -> Self {
         SymbolGenerator { 
             inst,
-            symbols:vec![],
+            //symbols:vec![],
             fs:FormattingState::default(),
             graph:Graph::new(),
             dep_search:DepSearch::new() 
