@@ -1,4 +1,4 @@
-use std::{path::{PathBuf}, str::FromStr, collections::HashMap, fs};
+use std::{path::{PathBuf}, str::FromStr, collections::{HashMap, HashSet}, fs, sync::RwLock};
 use crate::{compiler::compile_shader, IShaderBackend};
 use glsl_pack_rtbase::{rt_shaders::RuntimeShaders};
 use smol_str::SmolStr;
@@ -11,7 +11,7 @@ pub struct PackageManager {
     pkgs:HashMap<String,Package>,
     folders:Vec<PathBuf>,
     out_path:PathBuf,
-    pub rt_shaders:RuntimeShaders
+    pub rt_shaders:RuntimeShaders,
 }
 
 impl PackageManager {
@@ -34,13 +34,13 @@ impl PackageManager {
         self.out_path = path_buf;
     }
 
-    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:&Vec<SmolStr>,backend:&B,ex_data:&B::ExData) -> bool {
+    pub fn compile<B:IShaderBackend>(&mut self,pkg_name:&str,shader_name:&str,macros:&Vec<SmolStr>, compiled:&mut HashSet<u64>,backend:&B,ex_data:&B::ExData) -> bool {
         if !self.out_path.exists() {
             fs::create_dir_all(&self.out_path).unwrap();
         }
         let out_path = self.out_path.clone();
         if let Some(package) = self.get_or_load_pkg(pkg_name) {
-         if let Some(shader) = compile_shader(package,shader_name,macros,out_path,backend,ex_data) {
+         if let Some(shader) = compile_shader(package,shader_name,macros,out_path,compiled,backend,ex_data) {
             self.rt_shaders.add_shader(pkg_name, &shader);
             true
          } else {

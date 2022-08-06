@@ -1,6 +1,7 @@
-use std::{path::{PathBuf, Path}, fs, sync::Arc};
+use std::{path::{PathBuf, Path}, fs, sync::{Arc, RwLock}, collections::{hash_map::DefaultHasher, HashSet}, hash::{Hash, Hasher}};
 
 use glsl_pack_rtbase::shader::Shader;
+use shaderc::Compiler;
 use smol_str::SmolStr;
 
 use crate::{MacroGroup,compiler::shader_compiler::ShaderCompiler, package::Package, pkg_inst::PackageInstance};
@@ -15,11 +16,13 @@ pub fn compile_shader<'a,B:IShaderBackend>(
     shader_name:&str,
     macros:&Vec<SmolStr>,
     out_path:PathBuf,
+    compiled:&mut HashSet<u64>,
     backend:&B,ex_data:&B::ExData) -> Option<Arc<Shader>> {
     let efind_shader = package.info.shaders.iter().find(|v| v.name == shader_name);
     if efind_shader.is_none() {
         log::error!("not found shader {} in package {}",shader_name,package.info.name);
     }
+    
     let find_shader = efind_shader?.clone();
     let mut requires:Vec<SmolStr> = vec![];
     let mut options:Vec<SmolStr> = vec![];
@@ -54,13 +57,18 @@ pub fn compile_shader<'a,B:IShaderBackend>(
 
         all_verts.extend(require_verts.iter().map(|v| v.clone()));
        
-        run_macro(&out_path, pkg_inst.clone(), &find_shader, &group, backend,&all_verts,ex_data);
+        run_macro(&out_path, pkg_inst.clone(), &find_shader, &group, backend,&all_verts,compiled,ex_data);
     });
     Some(find_shader.clone())
     
 }
 
-fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,shader:&Arc<Shader>,macros:&MacroGroup,backend:&B,verts:&Vec<SmolStr>,ex_data:&B::ExData) {
+fn run_macro<B:IShaderBackend>(out_path:&PathBuf,
+                               pkg_inst:Arc<PackageInstance>,
+                               shader:&Arc<Shader>,
+                               macros:&MacroGroup,
+                               backend:&B,verts:&Vec<SmolStr>,
+                               compiled:&mut HashSet<u64>,ex_data:&B::ExData) {
     let macro_hash = macros.hash_base64();
    
     let mut vs_string = String::default();
@@ -70,63 +78,50 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,pkg_inst:Arc<PackageInstance>,s
     let vs_file_name = format!("{}#{}_{}.vert",pkg_inst.info.name,shader.name,macro_hash); 
     let fs_file_name = format!("{}#{}_{}.frag",pkg_inst.info.name,shader.name,macro_hash);
     
+    let mut hasher = DefaultHasher::default();
+    vs_file_name.hash(&mut hasher);
+    vs_string.hash(&mut hasher);
+    let vs_hash_code = hasher.finish();
 
-    let mut compiler = shaderc::Compiler::new().unwrap();
-    std::fs::write(out_path.join(&vs_file_name), &vs_string).unwrap();
-    std::fs::write(out_path.join(&fs_file_name), &fs_string).unwrap();
-  
-    let rvert_spv = compiler.compile_into_spirv(&vs_string,shaderc::ShaderKind::Vertex,&vs_file_name, "main", None);
-    let rfrag_spv = compiler.compile_into_spirv(&fs_string,shaderc::ShaderKind::Fragment,&fs_file_name, "main", None);
-    if let Err(err) = rvert_spv {
-        log::error!("{} error:{:?}",&vs_file_name,&err);
-        return;
-    }
-    if let Err(err) = rfrag_spv {
-        log::error!("{} error:{:?}",&fs_file_name,&err);
-        return;
+    hasher = DefaultHasher::default();
+    fs_file_name.hash(&mut hasher);
+    fs_string.hash(&mut hasher);
+    let fs_hash_code = hasher.finish();
+    
+    let (has_vs,has_fs) = (compiled.contains(&vs_hash_code),compiled.contains(&fs_hash_code));
+
+    let mut compiler:Option<Compiler> = None;
+    if !has_vs || !has_fs {  compiler = Some(shaderc::Compiler::new().unwrap()); }
+    
+    if !has_vs {
+        std::fs::write(out_path.join(&vs_file_name), &vs_string).unwrap();
+        let rvert_spv = compiler.as_mut().unwrap()
+                                                                .compile_into_spirv(&vs_string,
+                                                                shaderc::ShaderKind::Vertex,
+                                                                &vs_file_name,
+                                                                "main", None);
+        if let Err(err) = rvert_spv {
+            log::error!("{} error:{:?}",&vs_file_name,&err);
+            return;
+        }
+        std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), &rvert_spv.unwrap().as_binary_u8()).unwrap();
+        log::info!("write {}",&vs_file_name);
+        compiled.insert(vs_hash_code);
     }
     
-    std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), &rvert_spv.unwrap().as_binary_u8()).unwrap();
-    std::fs::write(out_path.join(format!("{}.spv",&fs_file_name)), &rfrag_spv.unwrap().as_binary_u8()).unwrap();
-    log::info!("write {}",&vs_file_name);
-    log::info!("write {}",&fs_file_name);
-}
-
-/*
-    let macro_group = MacroGroup::new(macros.clone());
-    let pkg_inst = package.get_inst(&macro_group);
-    let find_shader = pkg_inst.info.shaders.iter().find(|v| v.name == shader_name);
-    match find_shader {
-        Some(shader) => {
-            let mut const_macros = macro_group.names.clone();
-            let mut requires:Vec<String> = vec![];
-            let mut options:Vec<String> = vec![];
-            for (v,is_require) in shader.vertexs.iter() {
-                let mut nv = "VERTEX_".to_string();
-                nv.push_str(v.as_str());
-                if *is_require {
-                    requires.push(nv);
-                } else {
-                    options.push(nv);
-                }
-            }
-            const_macros.extend(requires);
-
-            start_combination(options.len(), |idxs| {
-                let mut all_macros:Vec<String> = vec![];
-                for (idx,is_use) in idxs.iter() {
-                    if *is_use {
-                        all_macros.push(options[*idx].clone());
-                    }
-                }
-                all_macros.extend(const_macros.clone());
-                run_macro(&out_path, pkg_inst.clone(), shader, &MacroGroup::new(all_macros), backend);
-                
-            });
-            Some(shader.clone())
-        },
-        None => {
-            log::error!("not found shader {} in package {}",shader_name,package.info.name);
-            None
+    if !has_fs {
+        std::fs::write(out_path.join(&fs_file_name), &fs_string).unwrap();
+        let rfrag_spv = compiler.as_mut().unwrap()
+                                                                .compile_into_spirv(&fs_string,
+                                                                                 shaderc::ShaderKind::Fragment,
+                                                                &fs_file_name,
+                                                                "main", None);
+        if let Err(err) = rfrag_spv {
+            log::error!("{} error:{:?}",&fs_file_name,&err);
+            return;
         }
-    } */
+        std::fs::write(out_path.join(format!("{}.spv",&fs_file_name)), &rfrag_spv.unwrap().as_binary_u8()).unwrap();
+        log::info!("write {}",&fs_file_name);
+        compiled.insert(fs_hash_code);
+    } 
+}
