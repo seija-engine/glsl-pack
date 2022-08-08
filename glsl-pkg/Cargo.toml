@@ -17,7 +17,7 @@ lang-util = { path = "../glsl-lang/lang-util" }
 glsl-lang = { path = "../glsl-lang/lang" }
 glsl-pack-rtbase = {path = "../glsl-pack-rtbase" }
 smol_str = "*"
-shaderc = "0.7"
+shaderc = "0.8.0"
 serde = "1.0.136"
 serde_derive = "1.0.136"
 lazy_static = "1.4.0"

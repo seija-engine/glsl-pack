@@ -40,7 +40,7 @@ pub fn compile_shader<'a,B:IShaderBackend>(
             options_verts.push(v_string.clone());
         }
     }
-    
+    log::debug!("start_combination start");
     start_combination(options.len(), |idxs| {
         let mut all_macros:Vec<SmolStr> = vec![];
         let mut all_verts:Vec<SmolStr> = vec![];
@@ -59,6 +59,7 @@ pub fn compile_shader<'a,B:IShaderBackend>(
        
         run_macro(&out_path, pkg_inst.clone(), &find_shader, &group, backend,&all_verts,compiled,ex_data);
     });
+    log::debug!("start_combination end");
     Some(find_shader.clone())
     
 }
@@ -70,14 +71,14 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,
                                backend:&B,verts:&Vec<SmolStr>,
                                compiled:&mut HashSet<u64>,ex_data:&B::ExData) {
     let macro_hash = macros.hash_base64();
-   
+    log::debug!("run_macro: {:?}",&macros);
     let mut vs_string = String::default();
     let mut fs_string:String  = String::default();
     let mut shader_compiler = ShaderCompiler::new(shader.clone(),pkg_inst.clone());
     shader_compiler.compile(backend,&mut vs_string,&mut fs_string,verts,ex_data);
     let vs_file_name = format!("{}#{}_{}.vert",pkg_inst.info.name,shader.name,macro_hash); 
     let fs_file_name = format!("{}#{}_{}.frag",pkg_inst.info.name,shader.name,macro_hash);
-    
+    log::debug!("shader_compiler success {} {}",&vs_file_name,&fs_file_name);
     let mut hasher = DefaultHasher::default();
     vs_file_name.hash(&mut hasher);
     vs_string.hash(&mut hasher);
@@ -95,6 +96,7 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,
     
     if !has_vs {
         std::fs::write(out_path.join(&vs_file_name), &vs_string).unwrap();
+        log::debug!("shaderc start vs {}",&vs_file_name);
         let rvert_spv = compiler.as_mut().unwrap()
                                                                 .compile_into_spirv(&vs_string,
                                                                 shaderc::ShaderKind::Vertex,
@@ -104,6 +106,7 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,
             log::error!("{} error:{:?}",&vs_file_name,&err);
             return;
         }
+        log::debug!("shaderc success vs {}",&vs_file_name);
         std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), &rvert_spv.unwrap().as_binary_u8()).unwrap();
         log::info!("write {}",&vs_file_name);
         compiled.insert(vs_hash_code);
@@ -111,6 +114,7 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,
     
     if !has_fs {
         std::fs::write(out_path.join(&fs_file_name), &fs_string).unwrap();
+        log::debug!("shaderc start fs {}",&fs_file_name);
         let rfrag_spv = compiler.as_mut().unwrap()
                                                                 .compile_into_spirv(&fs_string,
                                                                                  shaderc::ShaderKind::Fragment,
@@ -120,8 +124,10 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,
             log::error!("{} error:{:?}",&fs_file_name,&err);
             return;
         }
+        log::debug!("shaderc success fs {}",&vs_file_name);
         std::fs::write(out_path.join(format!("{}.spv",&fs_file_name)), &rfrag_spv.unwrap().as_binary_u8()).unwrap();
         log::info!("write {}",&fs_file_name);
         compiled.insert(fs_hash_code);
-    } 
+    }
+    log::debug!("run_macro end");
 }
