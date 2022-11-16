@@ -65,5 +65,10 @@
             {"name":"strength", "type":"float"},
             {"name":"shadowMap", "type":"texture2D"}
         ]
+    },
+    "PostEffect": {
+        "fns":[ 
+            {"name":"postTexture", "type":"texture2D"}
+        ]
     }
 }
