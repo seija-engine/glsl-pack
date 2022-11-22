@@ -1,7 +1,6 @@
 use std::{path::{PathBuf}, sync::{Arc}, collections::{hash_map::DefaultHasher, HashSet}, hash::{Hash, Hasher}};
-
 use glsl_pack_rtbase::shader::Shader;
-use shaderc::Compiler;
+use rspirv::binary::Disassemble;
 use smol_str::SmolStr;
 
 use crate::{MacroGroup,compiler::shader_compiler::ShaderCompiler, package::Package, pkg_inst::PackageInstance};
@@ -90,42 +89,73 @@ fn run_macro<B:IShaderBackend>(out_path:&PathBuf,
     let fs_hash_code = hasher.finish();
     
     let (has_vs,has_fs) = (compiled.contains(&vs_hash_code),compiled.contains(&fs_hash_code));
-
-    let mut compiler:Option<Compiler> = None;
-    if !has_vs || !has_fs {  compiler = Some(shaderc::Compiler::new().unwrap()); }
+    let mut parser = naga::front::glsl::Parser::default();
+    
     
     if !has_vs {
         std::fs::write(out_path.join(&vs_file_name), &vs_string).unwrap();
         log::debug!("shaderc start vs {}",&vs_file_name);
-        let rvert_spv = compiler.as_mut().unwrap()
-                                                                .compile_into_spirv(&vs_string,
-                                                                shaderc::ShaderKind::Vertex,
-                                                                &vs_file_name,
-                                                                "main", None);
-        if let Err(err) = rvert_spv {
-            log::error!("{} error:{:?}",&vs_file_name,&err);
+        let naga_module = parser.parse(&naga::front::glsl::Options {
+            stage:naga::ShaderStage::Vertex,
+            defines:Default::default()
+        }, &vs_string).unwrap();
+
+        let info = naga::valid::Validator::new(naga::valid::ValidationFlags::all(), Default::default()).validate(&naga_module);
+        if let Err(err) = info.as_ref() {
+            log::error!("{} :{:?}",vs_file_name,err);
             return;
         }
-        log::debug!("shaderc success vs {}",&vs_file_name);
-        std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), &rvert_spv.unwrap().as_binary_u8()).unwrap();
+        let info = info.unwrap();
+        let mut out_opt = naga::back::spv::Options::default();
+        out_opt.flags = naga::back::spv::WriterFlags::CLAMP_FRAG_DEPTH | naga::back::spv::WriterFlags::LABEL_VARYINGS;
+        match naga::back::spv::write_vec(&naga_module, &info, &out_opt, None) {
+            Ok(bytes) => {
+                let bytes = bytes.iter().fold(Vec::with_capacity(bytes.len() * 4), |mut v, w| {
+                    v.extend_from_slice(&w.to_le_bytes());
+                    v
+                });
+                std::fs::write(out_path.join( format!("{}.spv",&vs_file_name)), bytes).unwrap();
+            },
+            Err(err) => {
+                log::error!("{} :{:?}",vs_file_name,err);
+            }
+        };
+        
+        log::debug!("naga success vs {}",&vs_file_name);
         log::info!("write {}",&vs_file_name);
         compiled.insert(vs_hash_code);
     }
     
     if !has_fs {
         std::fs::write(out_path.join(&fs_file_name), &fs_string).unwrap();
-        log::debug!("shaderc start fs {}",&fs_file_name);
-        let rfrag_spv = compiler.as_mut().unwrap()
-                                                                .compile_into_spirv(&fs_string,
-                                                                                 shaderc::ShaderKind::Fragment,
-                                                                &fs_file_name,
-                                                                "main", None);
-        if let Err(err) = rfrag_spv {
-            log::error!("{} error:{:?}",&fs_file_name,&err);
+        log::debug!("naga start fs {}",&fs_file_name);
+        let naga_module = parser.parse(&naga::front::glsl::Options {
+            stage:naga::ShaderStage::Fragment,
+            defines:Default::default()
+        }, &fs_string).unwrap();
+
+        let info = naga::valid::Validator::new(naga::valid::ValidationFlags::all(), Default::default()).validate(&naga_module);
+        if let Err(err) = info.as_ref() {
+            log::error!("{} :{:?}",vs_file_name,err);
             return;
         }
+        let info = info.unwrap();
+        let mut out_opt = naga::back::spv::Options::default();
+        out_opt.flags = naga::back::spv::WriterFlags::CLAMP_FRAG_DEPTH | naga::back::spv::WriterFlags::LABEL_VARYINGS;
+        match naga::back::spv::write_vec(&naga_module, &info, &out_opt, None) {
+            Ok(bytes) => {
+                let bytes = bytes.iter().fold(Vec::with_capacity(bytes.len() * 4), |mut v, w| {
+                    v.extend_from_slice(&w.to_le_bytes());
+                    v
+                });
+                std::fs::write(out_path.join( format!("{}.spv",&fs_file_name)), bytes).unwrap();
+            },
+            Err(err) => {
+                log::error!("{} :{:?}",vs_file_name,err);
+            }
+        }
+
         log::debug!("shaderc success fs {}",&vs_file_name);
-        std::fs::write(out_path.join(format!("{}.spv",&fs_file_name)), &rfrag_spv.unwrap().as_binary_u8()).unwrap();
         log::info!("write {}",&fs_file_name);
         compiled.insert(fs_hash_code);
     }
