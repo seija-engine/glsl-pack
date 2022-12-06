@@ -70,5 +70,12 @@
         "fns":[ 
             {"name":"postTexture", "type":"texture2D"}
         ]
+    },
+    "IBLEnv": {
+        "fns":[ 
+            {"name":"irradianceMap", "type":"cubeMap" },
+            {"name":"prefilterMap", "type":"cubeMap" },
+            {"name":"brdfLUT", "type":"texture2D" }
+        ]
     }
 }
