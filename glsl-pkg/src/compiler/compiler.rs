@@ -1,6 +1,5 @@
 use std::{path::{PathBuf}, sync::{Arc}, collections::{hash_map::DefaultHasher, HashSet}, hash::{Hash, Hasher}};
 use glsl_pack_rtbase::shader::Shader;
-use rspirv::binary::Disassemble;
 use smol_str::SmolStr;
 
 use crate::{MacroGroup,compiler::shader_compiler::ShaderCompiler, package::Package, pkg_inst::PackageInstance};

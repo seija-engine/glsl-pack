@@ -78,4 +78,10 @@
             {"name":"brdfLUT", "type":"texture2D" }
         ]
     }
+    ,
+    "UIAtlas": {
+        "fns":[
+            {"name":"uiAtlas", "type":"texture2DArray" }
+        ]
+    }
 }
