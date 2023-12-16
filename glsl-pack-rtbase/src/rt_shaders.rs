@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::Path};
 use crate::shader::{Shader, FeatureItem};
-use smol_str::{SmolStr};
+use smol_str::SmolStr;
 
 #[derive(Serialize,Deserialize,Debug)]
 pub struct RTShaderInfo {
