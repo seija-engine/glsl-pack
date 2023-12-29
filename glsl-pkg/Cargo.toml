@@ -16,7 +16,7 @@ text-macro = { path = "../text-macro" }
 lang-util = { path = "../glsl-lang/lang-util" }
 glsl-lang = { path = "../glsl-lang/lang" }
 glsl-pack-rtbase = {path = "../glsl-pack-rtbase" }
-smol_str = "*"
+smol_str = "0.1.20"
 #shaderc = "0.8.0"
 rspirv = "0.11.0+1.5.4"
 naga = {version ="0.10.0",features=["glsl-in","spv-out"] } 
